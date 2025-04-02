@@ -29,8 +29,8 @@ export function AnalyticsConversionRates({ title, subheader, chart, ...other }: 
   const theme = useTheme();
 
   const chartColors = chart.colors ?? [
-    theme.palette.primary.dark,
-    hexAlpha(theme.palette.primary.dark, 0.24),
+    theme.palette.info.main,
+    hexAlpha(theme.palette.warning.main, 0.64),
   ];
 
   const chartOptions = useChart({
@@ -40,21 +40,21 @@ export function AnalyticsConversionRates({ title, subheader, chart, ...other }: 
       shared: true,
       intersect: false,
       y: {
-        formatter: (value: number) => fNumber(value),
+        formatter: (value: number) => `${fNumber(value)} logs`,
         title: { formatter: (seriesName: string) => `${seriesName}: ` },
       },
     },
     xaxis: { categories: chart.categories },
     dataLabels: {
       enabled: true,
-      offsetX: -6,
-      style: { fontSize: '10px', colors: ['#FFFFFF', theme.palette.text.primary] },
+      offsetY: -10,
+      style: { fontSize: '12px', colors: [theme.palette.text.primary] },
     },
     plotOptions: {
       bar: {
-        horizontal: true,
-        borderRadius: 2,
-        barHeight: '48%',
+        horizontal: false,
+        borderRadius: 4,
+        columnWidth: '50%',
         dataLabels: { position: 'top' },
       },
     },
@@ -70,7 +70,7 @@ export function AnalyticsConversionRates({ title, subheader, chart, ...other }: 
         series={chart.series}
         options={chartOptions}
         height={360}
-        sx={{ py: 2.5, pl: 1, pr: 2.5 }}
+        sx={{ py: 3, px: 2 }}
       />
     </Card>
   );

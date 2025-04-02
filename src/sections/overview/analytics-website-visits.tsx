@@ -27,15 +27,15 @@ export function AnalyticsWebsiteVisits({ title, subheader, chart, ...other }: Pr
   const theme = useTheme();
 
   const chartColors = chart.colors ?? [
-    theme.palette.primary.dark,
-    hexAlpha(theme.palette.primary.light, 0.64),
+    theme.palette.info.main,
+    hexAlpha(theme.palette.primary.main, 0.64),
   ];
 
   const chartOptions = useChart({
     colors: chartColors,
     stroke: {
-      width: 2,
-      colors: ['transparent'],
+      width: 3,
+      curve: 'smooth',
     },
     xaxis: {
       categories: chart.categories,
@@ -45,8 +45,11 @@ export function AnalyticsWebsiteVisits({ title, subheader, chart, ...other }: Pr
     },
     tooltip: {
       y: {
-        formatter: (value: number) => `${value} visits`,
+        formatter: (value: number) => `${value} logs`,
       },
+    },
+    markers: {
+      size: 4,
     },
     ...chart.options,
   });
@@ -56,11 +59,11 @@ export function AnalyticsWebsiteVisits({ title, subheader, chart, ...other }: Pr
       <CardHeader title={title} subheader={subheader} />
 
       <Chart
-        type="bar"
+        type="line"
         series={chart.series}
         options={chartOptions}
         height={364}
-        sx={{ py: 2.5, pl: 1, pr: 2.5 }}
+        sx={{ py: 3, px: 2 }}
       />
     </Card>
   );

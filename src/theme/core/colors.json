@@ -1,8 +1,8 @@
 {
   "primary": {
-    "lighter": "#D0ECFE",
+    "lighter": "#6eabef",
     "light": "#73BAFB",
-    "main": "#1877F2",
+    "main": "#6eabef",
     "dark": "#0C44AE",
     "darker": "#042174",
     "contrastText": "#FFFFFF"
@@ -18,7 +18,7 @@
   "info": {
     "lighter": "#CAFDF5",
     "light": "#61F3F3",
-    "main": "#00B8D9",
+    "main": "#8664fb",
     "dark": "#006C9C",
     "darker": "#003768",
     "contrastText": "#FFFFFF"
@@ -26,7 +26,7 @@
   "success": {
     "lighter": "#D3FCD2",
     "light": "#77ED8B",
-    "main": "#22C55E",
+    "main": "#c1ff72",
     "dark": "#118D57",
     "darker": "#065E49",
     "contrastText": "#ffffff"
@@ -42,7 +42,7 @@
   "error": {
     "lighter": "#FFE9D5",
     "light": "#FFAC82",
-    "main": "#FF5630",
+    "main": "#f7aaa6",
     "dark": "#B71D18",
     "darker": "#7A0916",
     "contrastText": "#FFFFFF"

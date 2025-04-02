@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import Box from '@mui/material/Box';
 import TableRow from '@mui/material/TableRow';
 import Checkbox from '@mui/material/Checkbox';
@@ -5,29 +6,45 @@ import TableHead from '@mui/material/TableHead';
 import TableCell from '@mui/material/TableCell';
 import TableSortLabel from '@mui/material/TableSortLabel';
 
-import { visuallyHidden } from './utils';
-
 // ----------------------------------------------------------------------
 
-type UserTableHeadProps = {
+interface HeadLabel {
+  id: string;
+  label: string;
+  align?: 'center' | 'left' | 'right';
+}
+
+interface UserTableHeadProps {
+  order: 'asc' | 'desc';
   orderBy: string;
   rowCount: number;
+  headLabel: HeadLabel[];
   numSelected: number;
-  order: 'asc' | 'desc';
   onSort: (id: string) => void;
-  headLabel: Record<string, any>[];
-  onSelectAllRows: (checked: boolean) => void;
-};
+  onSelectAllRows: (checked: boolean, newSelecteds: string[]) => void;
+}
 
-export function UserTableHead({
+export default function UserTableHead({
   order,
-  onSort,
   orderBy,
   rowCount,
   headLabel,
   numSelected,
+  onSort,
   onSelectAllRows,
 }: UserTableHeadProps) {
+  const visuallyHidden = {
+    border: 0,
+    margin: -1,
+    padding: 0,
+    width: '1px',
+    height: '1px',
+    overflow: 'hidden',
+    position: 'absolute',
+    whiteSpace: 'nowrap',
+    clip: 'rect(0 0 0 0)',
+  } as const;
+
   return (
     <TableHead>
       <TableRow>
@@ -35,9 +52,7 @@ export function UserTableHead({
           <Checkbox
             indeterminate={numSelected > 0 && numSelected < rowCount}
             checked={rowCount > 0 && numSelected === rowCount}
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-              onSelectAllRows(event.target.checked)
-            }
+            onChange={(event) => onSelectAllRows(event.target.checked, headLabel.map((_, index) => index.toString()))}
           />
         </TableCell>
 
@@ -46,10 +61,8 @@ export function UserTableHead({
             key={headCell.id}
             align={headCell.align || 'left'}
             sortDirection={orderBy === headCell.id ? order : false}
-            sx={{ width: headCell.width, minWidth: headCell.minWidth }}
           >
             <TableSortLabel
-              hideSortIcon
               active={orderBy === headCell.id}
               direction={orderBy === headCell.id ? order : 'asc'}
               onClick={() => onSort(headCell.id)}

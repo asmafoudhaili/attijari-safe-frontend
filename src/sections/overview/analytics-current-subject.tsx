@@ -28,19 +28,16 @@ export function AnalyticsCurrentSubject({ title, subheader, chart, ...other }: P
   const theme = useTheme();
 
   const chartColors = chart.colors ?? [
-    theme.palette.primary.main,
+    theme.palette.error.main,
     theme.palette.warning.main,
-    theme.palette.info.main,
   ];
 
   const chartOptions = useChart({
     colors: chartColors,
-    stroke: { width: 2 },
-    fill: { opacity: 0.48 },
-    xaxis: {
-      categories: chart.categories,
-      labels: { style: { colors: [...Array(6)].map(() => theme.palette.text.secondary) } },
-    },
+    stroke: { width: 1 },
+    fill: { opacity: 0.8 },
+    labels: chart.categories,
+    dataLabels: { enabled: true },
     ...chart.options,
   });
 
@@ -49,12 +46,12 @@ export function AnalyticsCurrentSubject({ title, subheader, chart, ...other }: P
       <CardHeader title={title} subheader={subheader} />
 
       <Chart
-        type="radar"
-        series={chart.series}
+        type="polarArea"
+        series={chart.series.map((item) => item.data[0])}
         options={chartOptions}
-        width={300}
-        height={300}
-        sx={{ my: 1, mx: 'auto' }}
+        width={320}
+        height={320}
+        sx={{ my: 2, mx: 'auto' }}
       />
 
       <Divider sx={{ borderStyle: 'dashed' }} />

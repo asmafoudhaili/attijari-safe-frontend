@@ -65,9 +65,9 @@ export function SignInView() {
         sx={{ mb: 3 }}
       />
 
-      <Link variant="body2" color="inherit" sx={{ mb: 1.5 }}>
+      {/* <Link variant="body2" color="inherit" sx={{ mb: 1.5 }}>
         Forgot password?
-      </Link>
+      </Link> */}
 
       <TextField
         fullWidth
@@ -89,16 +89,26 @@ export function SignInView() {
         sx={{ mb: 3 }}
       />
 
-      <LoadingButton
-        fullWidth
-        size="large"
-        type="submit"
-        color="inherit"
-        variant="contained"
-        loading={loading}
-      >
-        Sign in
-      </LoadingButton>
+<LoadingButton
+  fullWidth
+  size="large"
+  type="submit"
+  variant="contained"
+  loading={loading}
+  sx={{
+    backgroundColor: '#7b38ff', // Pink background
+    color: '#FFFFFF', // White text
+    '&:hover': {
+      backgroundColor: '#7b38ff', // Lighter pink on hover (consistent with nav hover)
+    },
+    '&.MuiLoadingButton-loading': {
+      backgroundColor: '#7b38ff', // Ensure loading state keeps the same background
+      color: '#FFFFFF', // Ensure loading state keeps the same text color
+    },
+  }}
+>
+  Sign in
+</LoadingButton>
     </Box>
   );
 
@@ -106,12 +116,7 @@ export function SignInView() {
     <>
       <Box gap={1.5} display="flex" flexDirection="column" alignItems="center" sx={{ mb: 5 }}>
         <Typography variant="h5">Sign in</Typography>
-        <Typography variant="body2" color="text.secondary">
-          Don’t have an account?
-          <Link variant="subtitle2" sx={{ ml: 0.5 }}>
-            Get started
-          </Link>
-        </Typography>
+
       </Box>
 
       {renderForm}

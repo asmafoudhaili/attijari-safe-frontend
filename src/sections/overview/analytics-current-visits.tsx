@@ -31,14 +31,12 @@ export function AnalyticsCurrentVisits({ title, subheader, chart, ...other }: Pr
   const chartSeries = chart.series.map((item) => item.value);
 
   const chartColors = chart.colors ?? [
-    theme.palette.primary.main,
-    theme.palette.warning.main,
-    theme.palette.secondary.dark,
+    theme.palette.success.main,
     theme.palette.error.main,
   ];
 
   const chartOptions = useChart({
-    chart: { sparkline: { enabled: true } },
+    chart: { sparkline: { enabled: false } },
     colors: chartColors,
     labels: chart.series.map((item) => item.label),
     stroke: { width: 0 },
@@ -49,7 +47,20 @@ export function AnalyticsCurrentVisits({ title, subheader, chart, ...other }: Pr
         title: { formatter: (seriesName: string) => `${seriesName}` },
       },
     },
-    plotOptions: { pie: { donut: { labels: { show: false } } } },
+    plotOptions: {
+      pie: {
+        donut: {
+          labels: {
+            show: true,
+            total: {
+              show: true,
+              label: 'Total Logs',
+              formatter: () => fNumber(chartSeries.reduce((a, b) => a + b, 0)),
+            },
+          },
+        },
+      },
+    },
     ...chart.options,
   });
 
@@ -58,12 +69,12 @@ export function AnalyticsCurrentVisits({ title, subheader, chart, ...other }: Pr
       <CardHeader title={title} subheader={subheader} />
 
       <Chart
-        type="pie"
+        type="donut"
         series={chartSeries}
         options={chartOptions}
-        width={{ xs: 240, xl: 260 }}
-        height={{ xs: 240, xl: 260 }}
-        sx={{ my: 6, mx: 'auto' }}
+        width={{ xs: 260, xl: 280 }}
+        height={{ xs: 260, xl: 280 }}
+        sx={{ my: 5, mx: 'auto' }}
       />
 
       <Divider sx={{ borderStyle: 'dashed' }} />

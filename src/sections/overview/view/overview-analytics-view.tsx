@@ -1,3 +1,6 @@
+import { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
+
 import Grid from '@mui/material/Unstable_Grid2';
 import Typography from '@mui/material/Typography';
 
@@ -16,122 +19,315 @@ import { AnalyticsConversionRates } from '../analytics-conversion-rates';
 
 // ----------------------------------------------------------------------
 
+interface Log {
+  id: number;
+  url: string;
+  type: string;
+  isSafe: boolean;
+  timestamp: string;
+}
+
 export function OverviewAnalyticsView() {
+  const [logs, setLogs] = useState<Log[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchLogs = useCallback(async () => {
+    try {
+      setLoading(true);
+      const authHeader = localStorage.getItem('authHeader');
+      if (!authHeader) {
+        throw new Error('Not authenticated');
+      }
+      const response = await axios.get('http://localhost:8080/api/admin/logs', {
+        headers: {
+          Authorization: authHeader,
+        },
+      });
+      setLogs(response.data);
+    } catch (error) {
+      console.error('Error fetching logs:', error);
+      alert('Failed to fetch logs. Please log in again.');
+      localStorage.removeItem('isAuthenticated');
+      localStorage.removeItem('authHeader');
+      window.location.href = '/sign-in';
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchLogs();
+  }, [fetchLogs]);
+
+  // Helper function to get months from timestamps
+  const getMonths = (logEntries: Log[]) => {
+    const months = [...new Set(logEntries.map((log) => log.timestamp.slice(0, 7)))]; // e.g., ["2025-04"]
+    return months.sort(); // Sort chronologically
+  };
+
+  // Helper function to calculate percentage change
+  const calculatePercentChange = (current: number, previous: number) => {
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return ((current - previous) / previous) * 100;
+  };
+
+  // Data for Total Logs
+  const totalLogsData = () => {
+    const months = getMonths(logs);
+    const series = months.map((month) =>
+      logs.filter((log) => log.timestamp.startsWith(month)).length
+    );
+
+    // For percentage change, compare the last two months
+    const currentMonthCount = series[series.length - 1] || 0;
+    const previousMonthCount = series[series.length - 2] || 0;
+    const percent = calculatePercentChange(currentMonthCount, previousMonthCount);
+
+    return {
+      total: logs.length,
+      percent,
+      chart: {
+        categories: months,
+        series,
+      },
+    };
+  };
+
+  // Data for Safe Logs
+  const safeLogsData = () => {
+    const safeLogs = logs.filter((log) => log.isSafe);
+    const months = getMonths(safeLogs);
+    const series = months.map((month) =>
+      safeLogs.filter((log) => log.timestamp.startsWith(month)).length
+    );
+
+    const currentMonthCount = series[series.length - 1] || 0;
+    const previousMonthCount = series[series.length - 2] || 0;
+    const percent = calculatePercentChange(currentMonthCount, previousMonthCount);
+
+    return {
+      total: safeLogs.length,
+      percent,
+      chart: {
+        categories: months,
+        series,
+      },
+    };
+  };
+
+  // Data for Unsafe Logs
+  const unsafeLogsData = () => {
+    const unsafeLogs = logs.filter((log) => !log.isSafe);
+    const months = getMonths(unsafeLogs);
+    const series = months.map((month) =>
+      unsafeLogs.filter((log) => log.timestamp.startsWith(month)).length
+    );
+
+    const currentMonthCount = series[series.length - 1] || 0;
+    const previousMonthCount = series[series.length - 2] || 0;
+    const percent = calculatePercentChange(currentMonthCount, previousMonthCount);
+
+    return {
+      total: unsafeLogs.length,
+      percent,
+      chart: {
+        categories: months,
+        series,
+      },
+    };
+  };
+
+  // Data for PHISHING Logs
+  const phishingLogsData = () => {
+    const phishingLogs = logs.filter((log) => log.type === 'PHISHING');
+    const months = getMonths(phishingLogs);
+    const series = months.map((month) =>
+      phishingLogs.filter((log) => log.timestamp.startsWith(month)).length
+    );
+
+    const currentMonthCount = series[series.length - 1] || 0;
+    const previousMonthCount = series[series.length - 2] || 0;
+    const percent = calculatePercentChange(currentMonthCount, previousMonthCount);
+
+    return {
+      total: phishingLogs.length,
+      percent,
+      chart: {
+        categories: months,
+        series,
+      },
+    };
+  };
+
+  // Process data for AnalyticsConversionRates (Safe vs Unsafe counts by type)
+  const conversionRatesData = () => {
+    const types = [...new Set(logs.map((log) => log.type))];
+    const safeCounts = types.map((type) =>
+      logs.filter((log) => log.type === type && log.isSafe).length
+    );
+    const unsafeCounts = types.map((type) =>
+      logs.filter((log) => log.type === type && !log.isSafe).length
+    );
+
+    return {
+      categories: types,
+      series: [
+        { name: 'Safe', data: safeCounts },
+        { name: 'Unsafe', data: unsafeCounts },
+      ],
+    };
+  };
+
+  // Process data for AnalyticsCurrentSubject (Safe counts by type)
+  const currentSubjectData = () => {
+    const types = [...new Set(logs.map((log) => log.type))];
+    const safeCounts = types.map((type) =>
+      logs.filter((log) => log.type === type && log.isSafe).length
+    );
+
+    return {
+      categories: types,
+      series: types.map((type, index) => ({
+        name: type,
+        data: [safeCounts[index]],
+      })),
+    };
+  };
+
+  // Process data for AnalyticsCurrentVisits (Safe vs Unsafe distribution)
+  const currentVisitsData = () => {
+    const safeCount = logs.filter((log) => log.isSafe).length;
+    const unsafeCount = logs.filter((log) => !log.isSafe).length;
+
+    return {
+      series: [
+        { label: 'Safe', value: safeCount },
+        { label: 'Unsafe', value: unsafeCount },
+      ],
+    };
+  };
+
+  // Process data for AnalyticsWebsiteVisits (Logs over time)
+  const websiteVisitsData = () => {
+    const dates = [...new Set(logs.map((log) => log.timestamp.split(' ')[0]))];
+    const phishingCounts = dates.map((date) =>
+      logs.filter((log) => log.timestamp.startsWith(date) && log.type === 'PHISHING').length
+    );
+    const codeSafetyCounts = dates.map((date) =>
+      logs.filter((log) => log.timestamp.startsWith(date) && log.type === 'CODE_SAFETY').length
+    );
+
+    return {
+      categories: dates,
+      series: [
+        { name: 'PHISHING', data: phishingCounts },
+        { name: 'CODE_SAFETY', data: codeSafetyCounts },
+      ],
+    };
+  };
+
+  if (loading) {
+    return (
+      <DashboardContent maxWidth="xl">
+        <Typography variant="h4" sx={{ mb: { xs: 3, md: 5 } }}>
+          Hi, Welcome back 👋
+        </Typography>
+        <Typography>Loading...</Typography>
+      </DashboardContent>
+    );
+  }
+
+  if (logs.length === 0) {
+    return (
+      <DashboardContent maxWidth="xl">
+        <Typography variant="h4" sx={{ mb: { xs: 3, md: 5 } }}>
+          Hi, Attijari Bank Admin 👋
+        </Typography>
+        <Typography>No logs available to display charts.</Typography>
+      </DashboardContent>
+    );
+  }
+
   return (
     <DashboardContent maxWidth="xl">
       <Typography variant="h4" sx={{ mb: { xs: 3, md: 5 } }}>
-        Hi, Welcome back 👋
+      Hi, Attijari Bank Admin 👋
       </Typography>
 
       <Grid container spacing={3}>
         <Grid xs={12} sm={6} md={3}>
           <AnalyticsWidgetSummary
-            title="Weekly sales"
-            percent={2.6}
-            total={714000}
-            icon={<img alt="icon" src="/assets/icons/glass/ic-glass-bag.svg" />}
-            chart={{
-              categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
-              series: [22, 8, 35, 50, 82, 84, 77, 12],
-            }}
-          />
-        </Grid>
-
-        <Grid xs={12} sm={6} md={3}>
-          <AnalyticsWidgetSummary
-            title="New users"
-            percent={-0.1}
-            total={1352831}
+            title="Total Logs"
+            percent={totalLogsData().percent}
+            total={totalLogsData().total}
             color="secondary"
-            icon={<img alt="icon" src="/assets/icons/glass/ic-glass-users.svg" />}
-            chart={{
-              categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
-              series: [56, 47, 40, 62, 73, 30, 23, 54],
-            }}
+            icon={<img alt="icon" src="/assets/icons/glass/document.svg" />}
+            chart={totalLogsData().chart}
           />
         </Grid>
-
         <Grid xs={12} sm={6} md={3}>
           <AnalyticsWidgetSummary
-            title="Purchase orders"
-            percent={2.8}
-            total={1723315}
-            color="warning"
-            icon={<img alt="icon" src="/assets/icons/glass/ic-glass-buy.svg" />}
-            chart={{
-              categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
-              series: [40, 70, 50, 28, 70, 75, 7, 64],
-            }}
-          />
-        </Grid>
-
-        <Grid xs={12} sm={6} md={3}>
-          <AnalyticsWidgetSummary
-            title="Messages"
-            percent={3.6}
-            total={234}
+            title="Unsafe Logs"
+            percent={unsafeLogsData().percent}
+            total={unsafeLogsData().total}
             color="error"
-            icon={<img alt="icon" src="/assets/icons/glass/ic-glass-message.svg" />}
-            chart={{
-              categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
-              series: [56, 30, 23, 54, 47, 40, 62, 73],
-            }}
+            icon={<img alt="icon" src="/assets/icons/glass/close.svg" />}
+            chart={unsafeLogsData().chart}
+          />
+        </Grid>
+        
+        <Grid xs={12} sm={6} md={3}>
+          <AnalyticsWidgetSummary
+            title="Safe Logs"
+            percent={safeLogsData().percent}
+            total={safeLogsData().total}
+            color="success"
+            icon={<img alt="icon" src="/assets/icons/glass/shield.svg" />}
+            chart={safeLogsData().chart}
+          />
+        </Grid>
+
+        
+
+        <Grid xs={12} sm={6} md={3}>
+          <AnalyticsWidgetSummary
+            title="PHISHING Logs"
+            percent={phishingLogsData().percent}
+            total={phishingLogsData().total}
+            color="error"
+            icon={<img alt="icon" src="/assets/icons/glass/danger.svg" />}
+            chart={phishingLogsData().chart}
           />
         </Grid>
 
         <Grid xs={12} md={6} lg={4}>
           <AnalyticsCurrentVisits
-            title="Current visits"
-            chart={{
-              series: [
-                { label: 'America', value: 3500 },
-                { label: 'Asia', value: 2500 },
-                { label: 'Europe', value: 1500 },
-                { label: 'Africa', value: 500 },
-              ],
-            }}
+            title="Safe vs Unsafe Logs"
+            chart={currentVisitsData()}
           />
         </Grid>
 
         <Grid xs={12} md={6} lg={8}>
           <AnalyticsWebsiteVisits
-            title="Website visits"
-            subheader="(+43%) than last year"
-            chart={{
-              categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'],
-              series: [
-                { name: 'Team A', data: [43, 33, 22, 37, 67, 68, 37, 24, 55] },
-                { name: 'Team B', data: [51, 70, 47, 67, 40, 37, 24, 70, 24] },
-              ],
-            }}
+            title="Logs Over Time"
+            subheader="PHISHING vs CODE_SAFETY Logs by Date"
+            chart={websiteVisitsData()}
           />
         </Grid>
 
         <Grid xs={12} md={6} lg={8}>
           <AnalyticsConversionRates
-            title="Conversion rates"
-            subheader="(+43%) than last year"
-            chart={{
-              categories: ['Italy', 'Japan', 'China', 'Canada', 'France'],
-              series: [
-                { name: '2022', data: [44, 55, 41, 64, 22] },
-                { name: '2023', data: [53, 32, 33, 52, 13] },
-              ],
-            }}
+            title="Log Safety by Type"
+            subheader="Safe vs Unsafe Logs by Type"
+            chart={conversionRatesData()}
           />
         </Grid>
 
         <Grid xs={12} md={6} lg={4}>
           <AnalyticsCurrentSubject
-            title="Current subject"
-            chart={{
-              categories: ['English', 'History', 'Physics', 'Geography', 'Chinese', 'Math'],
-              series: [
-                { name: 'Series 1', data: [80, 50, 30, 40, 100, 20] },
-                { name: 'Series 2', data: [20, 30, 40, 80, 20, 80] },
-                { name: 'Series 3', data: [44, 76, 78, 13, 43, 10] },
-              ],
-            }}
+            title="Safe Logs by Type"
+            subheader="Distribution of Safe Logs"
+            chart={currentSubjectData()}
           />
         </Grid>
 
