@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -14,7 +14,7 @@ import Tooltip from '@mui/material/Tooltip';
 import { useRouter } from 'src/routes/hooks';
 import { DashboardContent } from 'src/layouts/dashboard';
 
-import axios from 'axios';
+import axios from 'src/utils/axios'; // Use the configured axios instance
 import { Scrollbar } from 'src/components/scrollbar';
 import { Iconify } from 'src/components/iconify';
 
@@ -68,26 +68,39 @@ export function UserView() {
 
   const [logs, setLogs] = useState<Log[]>([]);
   const [filterType, setFilterType] = useState('');
+  const [loading, setLoading] = useState(true); // Add loading state
+  const isFetching = useRef(false); // Track fetching state
 
   const fetchLogs = useCallback(async () => {
+    if (isFetching.current) {
+      console.log('Fetch already in progress, skipping...');
+      return;
+    }
+
+    isFetching.current = true;
+    setLoading(true);
     try {
-      const authHeader = localStorage.getItem('authHeader');
-      if (!authHeader) {
+      const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+      const token = localStorage.getItem('token');
+      console.log('isAuthenticated:', isAuthenticated);
+      console.log('Token in localStorage:', token);
+
+      if (!isAuthenticated || !token) {
         throw new Error('Not authenticated');
       }
-      const response = await axios.get('http://localhost:8080/api/admin/logs', {
-        headers: {
-          Authorization: authHeader,
-        },
-      });
+
+      const response = await axios.get('/api/admin/logs'); // Use configured axios instance
       console.log('Fetched logs:', response.data);
       setLogs(response.data);
     } catch (error) {
       console.error('Error fetching logs:', error);
       alert('Failed to fetch logs. Please log in again.');
       localStorage.removeItem('isAuthenticated');
-      localStorage.removeItem('authHeader');
+      localStorage.removeItem('token');
       router.push('/sign-in');
+    } finally {
+      setLoading(false);
+      isFetching.current = false;
     }
   }, [router]);
 
@@ -102,6 +115,17 @@ export function UserView() {
   });
 
   const notFound = !dataFiltered.length && !!filterType;
+
+  if (loading) {
+    return (
+      <DashboardContent>
+        <Typography variant="h4" mb={5}>
+          Logs
+        </Typography>
+        <Typography>Loading...</Typography>
+      </DashboardContent>
+    );
+  }
 
   return (
     <DashboardContent>

@@ -1,4 +1,6 @@
 import { useState, useCallback } from 'react';
+import axiosDefault from 'axios';
+import axios from 'src/utils/axios';
 
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
@@ -12,38 +14,37 @@ import InputAdornment from '@mui/material/InputAdornment';
 import { useRouter } from 'src/routes/hooks';
 
 import { Iconify } from 'src/components/iconify';
-import axios from 'axios';
-
-// ----------------------------------------------------------------------
 
 export function SignInView() {
   const router = useRouter();
 
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState(''); // Controlled input for email (username)
-  const [password, setPassword] = useState(''); // Controlled input for password
-  const [loading, setLoading] = useState(false); // Loading state for the button
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSignIn = useCallback(async (event: React.FormEvent) => {
     event.preventDefault();
     setLoading(true);
 
     try {
-      const response = await axios.post(
+      const response = await axiosDefault.post(
         'http://localhost:8080/api/login',
         { username: email, password },
         {
           headers: {
-            Authorization: `Basic ${btoa(`${email}:${password}`)}`, // Use template literal
             'Content-Type': 'application/json',
           },
         }
       );
 
       if (response.status === 200) {
+        const token = response.data.jwt;
+        console.log('Login successful - Token received:', token);
         localStorage.setItem('isAuthenticated', 'true');
-        localStorage.setItem('authHeader', `Basic ${btoa(`${email}:${password}`)}`); // Use template literal
-        router.push('/'); // Redirect to the dashboard (HomePage)
+        localStorage.setItem('token', token);
+        console.log('Token stored in localStorage:', localStorage.getItem('token'));
+        router.push('/');
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -65,10 +66,6 @@ export function SignInView() {
         sx={{ mb: 3 }}
       />
 
-      {/* <Link variant="body2" color="inherit" sx={{ mb: 1.5 }}>
-        Forgot password?
-      </Link> */}
-
       <TextField
         fullWidth
         name="password"
@@ -89,26 +86,26 @@ export function SignInView() {
         sx={{ mb: 3 }}
       />
 
-<LoadingButton
-  fullWidth
-  size="large"
-  type="submit"
-  variant="contained"
-  loading={loading}
-  sx={{
-    backgroundColor: '#7b38ff', // Pink background
-    color: '#FFFFFF', // White text
-    '&:hover': {
-      backgroundColor: '#7b38ff', // Lighter pink on hover (consistent with nav hover)
-    },
-    '&.MuiLoadingButton-loading': {
-      backgroundColor: '#7b38ff', // Ensure loading state keeps the same background
-      color: '#FFFFFF', // Ensure loading state keeps the same text color
-    },
-  }}
->
-  Sign in
-</LoadingButton>
+      <LoadingButton
+        fullWidth
+        size="large"
+        type="submit"
+        variant="contained"
+        loading={loading}
+        sx={{
+          backgroundColor: '#7b38ff',
+          color: '#FFFFFF',
+          '&:hover': {
+            backgroundColor: '#7b38ff',
+          },
+          '&.MuiLoadingButton-loading': {
+            backgroundColor: '#7b38ff',
+            color: '#FFFFFF',
+          },
+        }}
+      >
+        Sign in
+      </LoadingButton>
     </Box>
   );
 
@@ -116,7 +113,6 @@ export function SignInView() {
     <>
       <Box gap={1.5} display="flex" flexDirection="column" alignItems="center" sx={{ mb: 5 }}>
         <Typography variant="h5">Sign in</Typography>
-
       </Box>
 
       {renderForm}

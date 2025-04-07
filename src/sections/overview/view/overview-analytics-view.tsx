@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import { useRouter } from 'src/routes/hooks'; // Import useRouter
+import axios from 'src/utils/axios';
 
 import Grid from '@mui/material/Unstable_Grid2';
 import Typography from '@mui/material/Typography';
@@ -28,32 +29,40 @@ interface Log {
 }
 
 export function OverviewAnalyticsView() {
+  const router = useRouter(); // Add router for redirection
   const [logs, setLogs] = useState<Log[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchLogs = useCallback(async () => {
+    // Check if the user is authenticated and a token exists
+    const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+    const token = localStorage.getItem('token');
+
+    if (!isAuthenticated || !token) {
+      router.push('/sign-in');
+      return;
+    }
+
     try {
       setLoading(true);
-      const authHeader = localStorage.getItem('authHeader');
-      if (!authHeader) {
-        throw new Error('Not authenticated');
-      }
-      const response = await axios.get('http://localhost:8080/api/admin/logs', {
-        headers: {
-          Authorization: authHeader,
-        },
-      });
-      setLogs(response.data);
+      const response = await axios.get('/api/admin/logs');
+      console.log('Fetched logs:', response.data);
+      const data = Array.isArray(response.data) ? response.data : [];
+      setLogs(data);
     } catch (error) {
       console.error('Error fetching logs:', error);
-      alert('Failed to fetch logs. Please log in again.');
-      localStorage.removeItem('isAuthenticated');
-      localStorage.removeItem('authHeader');
-      window.location.href = '/sign-in';
+      if (error.response?.status === 403 || error.response?.status === 401) {
+        alert('Session expired or unauthorized. Please log in again.');
+        localStorage.removeItem('isAuthenticated');
+        localStorage.removeItem('token');
+        router.push('/sign-in');
+      } else {
+        alert('Failed to fetch logs. Please try again later.');
+      }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     fetchLogs();
@@ -61,7 +70,8 @@ export function OverviewAnalyticsView() {
 
   // Helper function to get months from timestamps
   const getMonths = (logEntries: Log[]) => {
-    const months = [...new Set(logEntries.map((log) => log.timestamp.slice(0, 7)))]; // e.g., ["2025-04"]
+    const entries = Array.isArray(logEntries) ? logEntries : [];
+    const months = [...new Set(entries.map((log) => log.timestamp.slice(0, 7)))]; // e.g., ["2025-04"]
     return months.sort(); // Sort chronologically
   };
 
@@ -78,7 +88,6 @@ export function OverviewAnalyticsView() {
       logs.filter((log) => log.timestamp.startsWith(month)).length
     );
 
-    // For percentage change, compare the last two months
     const currentMonthCount = series[series.length - 1] || 0;
     const previousMonthCount = series[series.length - 2] || 0;
     const percent = calculatePercentChange(currentMonthCount, previousMonthCount);
@@ -251,7 +260,7 @@ export function OverviewAnalyticsView() {
   return (
     <DashboardContent maxWidth="xl">
       <Typography variant="h4" sx={{ mb: { xs: 3, md: 5 } }}>
-      Hi, Attijari Bank Admin 👋
+        Hi, Attijari Bank Admin 👋
       </Typography>
 
       <Grid container spacing={3}>
@@ -275,7 +284,7 @@ export function OverviewAnalyticsView() {
             chart={unsafeLogsData().chart}
           />
         </Grid>
-        
+
         <Grid xs={12} sm={6} md={3}>
           <AnalyticsWidgetSummary
             title="Safe Logs"
@@ -286,8 +295,6 @@ export function OverviewAnalyticsView() {
             chart={safeLogsData().chart}
           />
         </Grid>
-
-        
 
         <Grid xs={12} sm={6} md={3}>
           <AnalyticsWidgetSummary
