@@ -13,27 +13,25 @@ import MenuItem, { menuItemClasses } from '@mui/material/MenuItem';
 import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
 
+// ----------------------------------------------------------------------
+
 export type UserProps = {
-  id: number;
-  username: string;
-  password: string;
+  id: string;
+  name: string;
   role: string;
-  mobileNumber: string;
-  status?: string;
-  company?: string;
-  avatarUrl?: string;
-  isVerified?: boolean;
+  status: string;
+  company: string;
+  avatarUrl: string;
+  isVerified: boolean;
 };
 
 type UserTableRowProps = {
   row: UserProps;
   selected: boolean;
   onSelectRow: () => void;
-  onEditUser: () => void;
-  onDeleteUser: () => Promise<void>;
 };
 
-export function UserTableRow({ row, selected, onSelectRow, onEditUser, onDeleteUser }: UserTableRowProps) {
+export function UserTableRow({ row, selected, onSelectRow }: UserTableRowProps) {
   const [openPopover, setOpenPopover] = useState<HTMLButtonElement | null>(null);
 
   const handleOpenPopover = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
@@ -53,12 +51,12 @@ export function UserTableRow({ row, selected, onSelectRow, onEditUser, onDeleteU
 
         <TableCell component="th" scope="row">
           <Box gap={2} display="flex" alignItems="center">
-            <Avatar alt={row.username} src={row.avatarUrl || ''} />
-            {row.username}
+            <Avatar alt={row.name} src={row.avatarUrl} />
+            {row.name}
           </Box>
         </TableCell>
 
-        <TableCell>{row.company || '-'}</TableCell>
+        <TableCell>{row.company}</TableCell>
 
         <TableCell>{row.role}</TableCell>
 
@@ -71,7 +69,7 @@ export function UserTableRow({ row, selected, onSelectRow, onEditUser, onDeleteU
         </TableCell>
 
         <TableCell>
-          <Label color={(row.status === 'banned' && 'error') || 'success'}>{row.status || 'active'}</Label>
+          <Label color={(row.status === 'banned' && 'error') || 'success'}>{row.status}</Label>
         </TableCell>
 
         <TableCell align="right">
@@ -104,12 +102,12 @@ export function UserTableRow({ row, selected, onSelectRow, onEditUser, onDeleteU
             },
           }}
         >
-          <MenuItem onClick={onEditUser}>
+          <MenuItem onClick={handleClosePopover}>
             <Iconify icon="solar:pen-bold" />
             Edit
           </MenuItem>
 
-          <MenuItem onClick={onDeleteUser} sx={{ color: 'error.main' }}>
+          <MenuItem onClick={handleClosePopover} sx={{ color: 'error.main' }}>
             <Iconify icon="solar:trash-bin-trash-bold" />
             Delete
           </MenuItem>

@@ -33,10 +33,16 @@ const navData = [
     path: '/',
     icon: icon('ic-user'),
   },
+ 
   {
     title: 'Logs',
-    path: '/user',
+    path: '/logs',
     icon: icon('ic-analytics'),
+  },
+  {
+    title: 'User',
+    path: '/user',
+    icon: icon('ic-user'),
   },
   // {
   //   title: 'Product',
