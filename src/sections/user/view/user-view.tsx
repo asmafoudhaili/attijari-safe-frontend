@@ -109,11 +109,12 @@ export function UserView() {
   });
 
   // Enhanced getAvatar function with debugging
-  const getAvatar = (gender?: string) => {
-    console.log('Gender for user:', gender); // Debug log
-    if (!gender || gender.toUpperCase() !== 'FEMALE') return '/avatars/2.jpg'; // Default to male
-    return '/avatars/1.jpg';
-  };
+ const getAvatar = (gender?: string) => {
+  const normalized = gender?.trim().toUpperCase();
+  if (normalized === 'FEMALE') return '/avatars/1.jpg';
+  if (normalized === 'MALE') return '/avatars/2.jpg';
+  return '/avatars/2.jpg'; // Default to male avatar if gender is missing or unknown
+};
 
   return (
     <DashboardContent>

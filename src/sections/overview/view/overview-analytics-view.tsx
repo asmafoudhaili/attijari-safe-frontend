@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'src/routes/hooks'; // Import useRouter
+import { useRouter } from 'src/routes/hooks';
 import axios from 'src/utils/axios';
 
 import Grid from '@mui/material/Unstable_Grid2';
@@ -25,16 +25,15 @@ interface Log {
   url: string;
   type: string;
   isSafe: boolean;
-  timestamp: string;
+  timestamp: string | null; // allow null
 }
 
 export function OverviewAnalyticsView() {
-  const router = useRouter(); // Add router for redirection
+  const router = useRouter();
   const [logs, setLogs] = useState<Log[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchLogs = useCallback(async () => {
-    // Check if the user is authenticated and a token exists
     const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
     const token = localStorage.getItem('token');
 
@@ -47,7 +46,10 @@ export function OverviewAnalyticsView() {
       setLoading(true);
       const response = await axios.get('/api/admin/logs');
       console.log('Fetched logs:', response.data);
-      const data = Array.isArray(response.data) ? response.data : [];
+
+      const data = (Array.isArray(response.data) ? response.data : [])
+        .filter((log) => typeof log.timestamp === 'string' && log.timestamp.trim() !== ''); // clean bad data
+
       setLogs(data);
     } catch (error) {
       console.error('Error fetching logs:', error);
@@ -68,24 +70,28 @@ export function OverviewAnalyticsView() {
     fetchLogs();
   }, [fetchLogs]);
 
-  // Helper function to get months from timestamps
+  // Helper: get months safely
   const getMonths = (logEntries: Log[]) => {
     const entries = Array.isArray(logEntries) ? logEntries : [];
-    const months = [...new Set(entries.map((log) => log.timestamp.slice(0, 7)))]; // e.g., ["2025-04"]
-    return months.sort(); // Sort chronologically
+    const months = [
+      ...new Set(
+        entries
+          .filter((log) => typeof log.timestamp === 'string') // ensure valid
+          .map((log) => log.timestamp!.slice(0, 7))
+      ),
+    ];
+    return months.sort();
   };
 
-  // Helper function to calculate percentage change
   const calculatePercentChange = (current: number, previous: number) => {
     if (previous === 0) return current > 0 ? 100 : 0;
     return ((current - previous) / previous) * 100;
   };
 
-  // Data for Total Logs
   const totalLogsData = () => {
     const months = getMonths(logs);
     const series = months.map((month) =>
-      logs.filter((log) => log.timestamp.startsWith(month)).length
+      logs.filter((log) => log.timestamp?.startsWith(month)).length
     );
 
     const currentMonthCount = series[series.length - 1] || 0;
@@ -102,12 +108,11 @@ export function OverviewAnalyticsView() {
     };
   };
 
-  // Data for Safe Logs
   const safeLogsData = () => {
     const safeLogs = logs.filter((log) => log.isSafe);
     const months = getMonths(safeLogs);
     const series = months.map((month) =>
-      safeLogs.filter((log) => log.timestamp.startsWith(month)).length
+      safeLogs.filter((log) => log.timestamp?.startsWith(month)).length
     );
 
     const currentMonthCount = series[series.length - 1] || 0;
@@ -124,12 +129,11 @@ export function OverviewAnalyticsView() {
     };
   };
 
-  // Data for Unsafe Logs
   const unsafeLogsData = () => {
     const unsafeLogs = logs.filter((log) => !log.isSafe);
     const months = getMonths(unsafeLogs);
     const series = months.map((month) =>
-      unsafeLogs.filter((log) => log.timestamp.startsWith(month)).length
+      unsafeLogs.filter((log) => log.timestamp?.startsWith(month)).length
     );
 
     const currentMonthCount = series[series.length - 1] || 0;
@@ -146,12 +150,11 @@ export function OverviewAnalyticsView() {
     };
   };
 
-  // Data for PHISHING Logs
   const phishingLogsData = () => {
     const phishingLogs = logs.filter((log) => log.type === 'PHISHING');
     const months = getMonths(phishingLogs);
     const series = months.map((month) =>
-      phishingLogs.filter((log) => log.timestamp.startsWith(month)).length
+      phishingLogs.filter((log) => log.timestamp?.startsWith(month)).length
     );
 
     const currentMonthCount = series[series.length - 1] || 0;
@@ -168,7 +171,6 @@ export function OverviewAnalyticsView() {
     };
   };
 
-  // Process data for AnalyticsConversionRates (Safe vs Unsafe counts by type)
   const conversionRatesData = () => {
     const types = [...new Set(logs.map((log) => log.type))];
     const safeCounts = types.map((type) =>
@@ -187,7 +189,6 @@ export function OverviewAnalyticsView() {
     };
   };
 
-  // Process data for AnalyticsCurrentSubject (Safe counts by type)
   const currentSubjectData = () => {
     const types = [...new Set(logs.map((log) => log.type))];
     const safeCounts = types.map((type) =>
@@ -203,7 +204,6 @@ export function OverviewAnalyticsView() {
     };
   };
 
-  // Process data for AnalyticsCurrentVisits (Safe vs Unsafe distribution)
   const currentVisitsData = () => {
     const safeCount = logs.filter((log) => log.isSafe).length;
     const unsafeCount = logs.filter((log) => !log.isSafe).length;
@@ -216,14 +216,16 @@ export function OverviewAnalyticsView() {
     };
   };
 
-  // Process data for AnalyticsWebsiteVisits (Logs over time)
   const websiteVisitsData = () => {
-    const dates = [...new Set(logs.map((log) => log.timestamp.split(' ')[0]))];
+    const dates = [...new Set(logs
+      .filter((log) => typeof log.timestamp === 'string')
+      .map((log) => log.timestamp!.split(' ')[0]))];
+
     const phishingCounts = dates.map((date) =>
-      logs.filter((log) => log.timestamp.startsWith(date) && log.type === 'PHISHING').length
+      logs.filter((log) => log.timestamp?.startsWith(date) && log.type === 'PHISHING').length
     );
     const codeSafetyCounts = dates.map((date) =>
-      logs.filter((log) => log.timestamp.startsWith(date) && log.type === 'CODE_SAFETY').length
+      logs.filter((log) => log.timestamp?.startsWith(date) && log.type === 'CODE_SAFETY').length
     );
 
     return {
