@@ -1,3 +1,4 @@
+// src/routes/index.tsx
 import { lazy, Suspense } from 'react';
 import { Outlet, Navigate, useRoutes } from 'react-router-dom';
 
@@ -34,7 +35,7 @@ const renderFallback = (
 );
 
 // Check if the user is authenticated
-const isAuthenticated = () => localStorage.getItem('isAuthenticated') === 'true';
+const isAuthenticated = () => !!localStorage.getItem('token'); // Check for token instead of isAuthenticated
 
 // ProtectedRoute component to wrap dashboard routes
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {

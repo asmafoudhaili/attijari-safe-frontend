@@ -1,7 +1,5 @@
 import { useState, useCallback } from 'react';
-import axiosDefault from 'axios';
 import axios from 'src/utils/axios';
-
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import Divider from '@mui/material/Divider';
@@ -12,12 +10,10 @@ import LoadingButton from '@mui/lab/LoadingButton';
 import InputAdornment from '@mui/material/InputAdornment';
 
 import { useRouter } from 'src/routes/hooks';
-
 import { Iconify } from 'src/components/iconify';
 
 export function SignInView() {
   const router = useRouter();
-
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,15 +24,7 @@ export function SignInView() {
     setLoading(true);
 
     try {
-      const response = await axiosDefault.post(
-        'http://localhost:8080/api/login',
-        { username: email, password },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      const response = await axios.post('/api/login', { username: email, password });
 
       if (response.status === 200) {
         const token = response.data.jwt;

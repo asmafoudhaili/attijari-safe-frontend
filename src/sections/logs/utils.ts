@@ -1,3 +1,4 @@
+// src/sections/user/utils.tsx
 export function emptyRows(page: number, rowsPerPage: number, arrayLength: number) {
   return page ? Math.max(0, (1 + page) * rowsPerPage - arrayLength) : 0;
 }
@@ -23,7 +24,10 @@ export function applyFilter({
 
   if (filterName) {
     inputData = inputData.filter(
-      (log) => log.type.toLowerCase().indexOf(filterName.toLowerCase()) !== -1
+      (log) =>
+        log.url.toLowerCase().indexOf(filterName.toLowerCase()) !== -1 ||
+        (log.prediction && log.prediction.toLowerCase().indexOf(filterName.toLowerCase()) !== -1) ||
+        (log.walletAddress && log.walletAddress.toLowerCase().indexOf(filterName.toLowerCase()) !== -1)
     );
   }
 

@@ -1,11 +1,10 @@
+// src/sections/user/table-no-data.tsx
 import type { TableRowProps } from '@mui/material/TableRow';
 
 import Box from '@mui/material/Box';
 import TableRow from '@mui/material/TableRow';
 import TableCell from '@mui/material/TableCell';
 import Typography from '@mui/material/Typography';
-
-// ----------------------------------------------------------------------
 
 type TableNoDataProps = TableRowProps & {
   searchQuery: string;

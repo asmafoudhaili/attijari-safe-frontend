@@ -1,3 +1,4 @@
+// src/sections/logs/logs-table-head.tsx
 import PropTypes from 'prop-types';
 import Box from '@mui/material/Box';
 import TableRow from '@mui/material/TableRow';
@@ -6,15 +7,13 @@ import TableHead from '@mui/material/TableHead';
 import TableCell from '@mui/material/TableCell';
 import TableSortLabel from '@mui/material/TableSortLabel';
 
-// ----------------------------------------------------------------------
-
 interface HeadLabel {
   id: string;
   label: string;
   align?: 'center' | 'left' | 'right';
 }
 
-interface UserTableHeadProps {
+interface LogsTableHeadProps {
   order: 'asc' | 'desc';
   orderBy: string;
   rowCount: number;
@@ -24,7 +23,7 @@ interface UserTableHeadProps {
   onSelectAllRows: (checked: boolean, newSelecteds: string[]) => void;
 }
 
-export default function UserTableHead({
+export default function LogsTableHead({
   order,
   orderBy,
   rowCount,
@@ -32,7 +31,7 @@ export default function UserTableHead({
   numSelected,
   onSort,
   onSelectAllRows,
-}: UserTableHeadProps) {
+}: LogsTableHeadProps) {
   const visuallyHidden = {
     border: 0,
     margin: -1,
@@ -80,3 +79,19 @@ export default function UserTableHead({
     </TableHead>
   );
 }
+
+LogsTableHead.propTypes = {
+  order: PropTypes.oneOf(['asc', 'desc']).isRequired,
+  orderBy: PropTypes.string.isRequired,
+  rowCount: PropTypes.number.isRequired,
+  headLabel: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      label: PropTypes.string.isRequired,
+      align: PropTypes.oneOf(['center', 'left', 'right']),
+    })
+  ).isRequired,
+  numSelected: PropTypes.number.isRequired,
+  onSort: PropTypes.func.isRequired,
+  onSelectAllRows: PropTypes.func.isRequired,
+};
