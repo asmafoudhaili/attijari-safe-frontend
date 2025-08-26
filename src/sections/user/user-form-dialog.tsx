@@ -138,7 +138,7 @@ export function UserFormDialog({
 }
 
 export type UserProps = {
-  id: number;
+  id: string; // Changed from number to string
   username: string;
   password: string;
   role: string;

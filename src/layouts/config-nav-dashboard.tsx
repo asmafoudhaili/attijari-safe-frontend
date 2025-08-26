@@ -38,6 +38,10 @@ const navData = [
     title: 'Logs',
     path: '/logs',
     icon: icon('ic-analytics'),
+  },{
+    title: 'Reclamations',
+    path: '/reclamations',
+    icon: icon('ic-analytics'),
   },
   {
     title: 'User',

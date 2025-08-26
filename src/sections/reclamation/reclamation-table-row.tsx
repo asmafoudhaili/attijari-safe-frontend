@@ -15,7 +15,7 @@ import { Iconify } from 'src/components/iconify';
 
 // ----------------------------------------------------------------------
 
-export type LogsProps = {
+export type ReclamationProps = {
   id: string;
   name: string;
   role: string;
@@ -25,13 +25,13 @@ export type LogsProps = {
   isVerified: boolean;
 };
 
-type LogsTableRowProps = {
-  row: LogsProps;
+type ReclamationTableRowProps = {
+  row: ReclamationProps;
   selected: boolean;
   onSelectRow: () => void;
 };
 
-export function LogsTableRow({ row, selected, onSelectRow }: LogsTableRowProps) {
+export function ReclamationTableRow({ row, selected, onSelectRow }: ReclamationTableRowProps) {
   const [openPopover, setOpenPopover] = useState<HTMLButtonElement | null>(null);
 
   const handleOpenPopover = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {

@@ -1,14 +1,13 @@
-// src/sections/logs/view/logs-view.tsx
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
-import Typography from '@mui/material/Typography';
 import TableContainer from '@mui/material/TableContainer';
 import TablePagination from '@mui/material/TablePagination';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
 import Tooltip from '@mui/material/Tooltip';
 
 import { useRouter } from 'src/routes/hooks';
@@ -16,51 +15,23 @@ import { DashboardContent } from 'src/layouts/dashboard';
 import axios from 'src/utils/axios';
 import { Scrollbar } from 'src/components/scrollbar';
 import { Iconify } from 'src/components/iconify';
-import { TableNoData } from 'src/sections/user/table-no-data';
-import { TableEmptyRows } from 'src/sections/user/table-empty-rows';
-import UserTableHeadComponent from 'src/sections/user/user-table-head';
-import { emptyRows, applyFilter, getComparator } from 'src/sections/user/utils';
+import { TableNoData } from 'src/sections/logs/table-no-data';
+import { TableEmptyRows } from 'src/sections/logs/table-empty-rows';
+import { emptyRows, applyFilter, getComparator } from 'src/sections/logs/utils';
 import { useTable } from 'src/routes/hooks/use-table';
+import LogsTableHead from 'src/sections/logs/logs-table-head';
 
 // Interfaces
-interface PhishingLog {
+interface LogBase {
   id: number;
   url: string;
   isSafe: boolean;
   timestamp: string;
-  probability: number;
-  prediction: string;
-  error?: string;
 }
-
-interface RansomwareLog {
-  id: number;
-  url: string;
-  isSafe: boolean;
-  timestamp: string;
-  probability: number;
-  walletAddress: string;
-  error?: string;
-}
-
-interface DoSLog {
-  id: number;
-  url: string;
-  isSafe: boolean;
-  timestamp: string;
-  probability: number;
-  error?: string;
-}
-
-interface CodeSafetyLog {
-  id: number;
-  url: string;
-  isSafe: boolean;
-  timestamp: string;
-  prediction: string;
-  anomalyScore: number;
-  error?: string;
-}
+interface PhishingLog extends LogBase { probability: number; }
+interface RansomwareLog extends LogBase { probability: number; walletAddress: string; }
+interface DoSLog extends LogBase { probability: number; }
+interface CodeSafetyLog extends LogBase { anomalyScore: number; }
 
 // SVG Components
 function SafeIcon() {
@@ -70,7 +41,6 @@ function SafeIcon() {
     </svg>
   );
 }
-
 function UnsafeIcon() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
@@ -94,115 +64,81 @@ export function LogsView() {
   const [loading, setLoading] = useState(true);
   const isFetching = useRef(false);
 
- // src/sections/logs/view/logs-view.tsx (partial update)
-const fetchLogs = useCallback(async () => {
-  if (isFetching.current) return;
-  isFetching.current = true;
-  setLoading(true);
-  try {
-    const token = localStorage.getItem('token');
-    if (!token) throw new Error('Not authenticated');
+  const fetchLogs = useCallback(async () => {
+    if (isFetching.current) return;
+    isFetching.current = true;
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('Not authenticated');
 
-    const response = await axios.get('/api/admin/notifications/history', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+      const response = await axios.get('/api/admin/notifications/history', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-    const phishing: PhishingLog[] = [];
-    const ransomware: RansomwareLog[] = [];
-    const dos: DoSLog[] = [];
-    const codeSafety: CodeSafetyLog[] = [];
+      const phishing: PhishingLog[] = [];
+      const ransomware: RansomwareLog[] = [];
+      const dos: DoSLog[] = [];
+      const codeSafety: CodeSafetyLog[] = [];
 
-    response.data.forEach((notification: any, index: number) => {
-      const details = JSON.parse(notification.details);
-      const log = {
-        id: notification.id || index + 1,
-        url: details.url || details.code || 'N/A',
-        isSafe: notification.isSafe,
-        timestamp: notification.timestamp,
-        error: details.error || 'N/A',
-      };
+      response.data.forEach((notification: any, index: number) => {
+        const details = JSON.parse(notification.details);
+        const baseLog = {
+          id: notification.id || index + 1,
+          url: details.url || details.code || 'N/A',
+          isSafe: notification.isSafe,
+          timestamp: notification.timestamp,
+        };
 
-      switch (notification.threatType) {
-        case 'phishing':
-          phishing.push({
-            ...log,
-            probability: details.probability || 0,
-            prediction: details.prediction || 'N/A',
-          });
-          break;
-        case 'ransomware':
-          ransomware.push({
-            ...log,
-            probability: details.probability || 0,
-            walletAddress: details.wallet_address || 'N/A',
-          });
-          break;
-        case 'dos':
-          dos.push({
-            ...log,
-            probability: details.probability || 0,
-          });
-          break;
-        case 'codeSafety':
-          codeSafety.push({
-            ...log,
-            prediction: details.prediction || 'N/A',
-            anomalyScore: details.anomaly_score || 0,
-          });
-          break;
-        default:
-          break;
-      }
-    });
+        switch (notification.threatType) {
+          case 'phishing':
+            phishing.push({ ...baseLog, probability: details.probability || 0 });
+            break;
+          case 'ransomware':
+            ransomware.push({ ...baseLog, probability: details.probability || 0, walletAddress: details.wallet_address || 'N/A' });
+            break;
+          case 'dos':
+            dos.push({ ...baseLog, probability: details.probability || 0 });
+            break;
+          case 'codeSafety':
+            codeSafety.push({ ...baseLog, anomalyScore: details.anomaly_score || 0 });
+            break;
+          default:
+            break;
+        }
+      });
 
-    setPhishingLogs(phishing);
-    setRansomwareLogs(ransomware);
-    setDoSLogs(dos);
-    setCodeSafetyLogs(codeSafety);
-  } catch (error) {
-    console.error('Error fetching logs:', error);
-    alert('Failed to fetch logs. Please log in again.');
-    localStorage.removeItem('token');
-    localStorage.removeItem('isAuthenticated'); // Clear isAuthenticated
-    router.push('/sign-in');
-  } finally {
-    setLoading(false);
-    isFetching.current = false;
-  }
-}, [router]);
+      setPhishingLogs(phishing);
+      setRansomwareLogs(ransomware);
+      setDoSLogs(dos);
+      setCodeSafetyLogs(codeSafety);
+    } catch (error) {
+      console.error('Error fetching logs:', error);
+      alert('Failed to fetch logs. Please log in again.');
+      localStorage.removeItem('token');
+      localStorage.removeItem('isAuthenticated');
+      router.push('/sign-in');
+    } finally {
+      setLoading(false);
+      isFetching.current = false;
+    }
+  }, [router]);
 
   useEffect(() => {
     fetchLogs();
   }, [fetchLogs]);
 
-  const dataFilteredPhishing = applyFilter({
-    inputData: phishingLogs,
-    comparator: getComparator(tablePhishing.order, tablePhishing.orderBy),
-    filterName: tablePhishing.filterName,
-  });
+  const getFilteredData = (data: any[], tableHook: any) =>
+    applyFilter({
+      inputData: data,
+      comparator: getComparator(tableHook.order, tableHook.orderBy),
+      filterName: tableHook.filterName,
+    });
 
-  const dataFilteredRansomware = applyFilter({
-    inputData: ransomwareLogs,
-    comparator: getComparator(tableRansomware.order, tableRansomware.orderBy),
-    filterName: tableRansomware.filterName,
-  });
-
-  const dataFilteredDoS = applyFilter({
-    inputData: doSLogs,
-    comparator: getComparator(tableDoS.order, tableDoS.orderBy),
-    filterName: tableDoS.filterName,
-  });
-
-  const dataFilteredCodeSafety = applyFilter({
-    inputData: codeSafetyLogs,
-    comparator: getComparator(tableCodeSafety.order, tableCodeSafety.orderBy),
-    filterName: tableCodeSafety.filterName,
-  });
-
-  const notFoundPhishing = !dataFilteredPhishing.length && !!tablePhishing.filterName;
-  const notFoundRansomware = !dataFilteredRansomware.length && !!tableRansomware.filterName;
-  const notFoundDoS = !dataFilteredDoS.length && !!tableDoS.filterName;
-  const notFoundCodeSafety = !dataFilteredCodeSafety.length && !!tableCodeSafety.filterName;
+  const phishingData = getFilteredData(phishingLogs, tablePhishing);
+  const ransomwareData = getFilteredData(ransomwareLogs, tableRansomware);
+  const dosData = getFilteredData(doSLogs, tableDoS);
+  const codeSafetyData = getFilteredData(codeSafetyLogs, tableCodeSafety);
 
   if (loading) {
     return (
@@ -213,6 +149,111 @@ const fetchLogs = useCallback(async () => {
     );
   }
 
+  const renderTable = (title: string, data: any[], columns: any[], tableHook: any) => (
+    <Card sx={{ mb: 4 }}>
+      <Typography variant="h6" sx={{ p: 2 }}>{title}</Typography>
+      <TextField
+        fullWidth
+        type="date"
+        value={tableHook.filterName}
+        onChange={(event) => {
+          tableHook.onFilterName(event.target.value);
+          tableHook.onResetPage();
+        }}
+        InputLabelProps={{ shrink: true }}
+        sx={{ p: 2, maxWidth: '300px' }}
+      />
+      <Scrollbar>
+        <TableContainer>
+          <Table sx={{ minWidth: 600 }}>
+            <LogsTableHead
+              order={tableHook.order}
+              orderBy={tableHook.orderBy}
+              rowCount={data.length}
+              numSelected={0}
+              onSort={tableHook.onSort}
+              headLabel={columns}
+              onSelectAllRows={() => {}}
+            />
+            <TableBody>
+              {data.length === 0 && !tableHook.filterName ? (
+                <tr>
+                  <td colSpan={columns.length} style={{ textAlign: 'center', padding: '20px' }}>
+                    <Typography variant="body2">No logs available.</Typography>
+                  </td>
+                </tr>
+              ) : (
+                <>
+                  {data
+                    .slice(tableHook.page * tableHook.rowsPerPage, tableHook.page * tableHook.rowsPerPage + tableHook.rowsPerPage)
+                    .map((row) => (
+                      <tr key={row.id} style={{ height: 68 }}>
+                        {columns.map((col) => (
+                          <td key={col.id} style={{ padding: '8px 16px', textAlign: col.align }}>
+                            {col.id === 'isSafe' ? (
+                              <Tooltip title={row.isSafe ? 'Safe' : 'Unsafe'} arrow>
+                                <Box sx={{ display: 'inline-block' }}>{row.isSafe ? <SafeIcon /> : <UnsafeIcon />}</Box>
+                              </Tooltip>
+                            ) : col.id === 'probability' ? (
+                              `${Math.round(row[col.id] * 100)}%`
+                            ) : col.id === 'anomalyScore' ? (
+                              row[col.id]?.toFixed(2) || 'N/A'
+                            ) : (
+                              row[col.id]?.toString() || 'N/A'
+                            )}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  <TableEmptyRows height={68} emptyRows={emptyRows(tableHook.page, tableHook.rowsPerPage, data.length)} />
+                  {!data.length && tableHook.filterName && <TableNoData searchQuery={tableHook.filterName} />}
+                </>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Scrollbar>
+      <TablePagination
+        component="div"
+        page={tableHook.page}
+        count={data.length}
+        rowsPerPage={tableHook.rowsPerPage}
+        onPageChange={tableHook.onChangePage}
+        rowsPerPageOptions={[5, 10, 25]}
+        onRowsPerPageChange={tableHook.onChangeRowsPerPage}
+      />
+    </Card>
+  );
+
+  const phishingColumns = [
+    { id: 'url', label: 'URL', align: 'center' },
+    { id: 'isSafe', label: 'Safe', align: 'center' },
+    { id: 'timestamp', label: 'Timestamp', align: 'center' },
+    { id: 'probability', label: 'Probability (%)', align: 'center' },
+  ];
+
+  const ransomwareColumns = [
+    { id: 'url', label: 'URL', align: 'center' },
+    { id: 'isSafe', label: 'Safe', align: 'center' },
+    { id: 'timestamp', label: 'Timestamp', align: 'center' },
+    { id: 'probability', label: 'Probability (%)', align: 'center' },
+    { id: 'walletAddress', label: 'Wallet Address', align: 'center' },
+  ];
+
+  const dosColumns = [
+    { id: 'url', label: 'URL', align: 'center' },
+    { id: 'isSafe', label: 'Safe', align: 'center' },
+    { id: 'timestamp', label: 'Timestamp', align: 'center' },
+    { id: 'probability', label: 'Probability (%)', align: 'center' },
+  ];
+
+  const codeSafetyColumns = [
+    { id: 'url', label: 'URL/Code', align: 'center' },
+    { id: 'isSafe', label: 'Safe', align: 'center' },
+    { id: 'timestamp', label: 'Timestamp', align: 'center' },
+    { id: 'anomalyScore', label: 'Anomaly Score', align: 'center' },
+  ];
+
   return (
     <DashboardContent>
       <Box display="flex" alignItems="center" mb={5}>
@@ -222,351 +263,10 @@ const fetchLogs = useCallback(async () => {
         </Button>
       </Box>
 
-      {/* Phishing Logs Table */}
-      <Card sx={{ mb: 4 }}>
-        <Typography variant="h6" sx={{ p: 2 }}>Phishing Logs</Typography>
-        <TextField
-          fullWidth
-          value={tablePhishing.filterName}
-          onChange={(event) => {
-            tablePhishing.onFilterName(event.target.value);
-            tablePhishing.onResetPage();
-          }}
-          placeholder="Filter by URL or Prediction..."
-          sx={{ p: 2, maxWidth: '300px' }}
-        />
-        <Scrollbar>
-          <TableContainer>
-            <Table sx={{ minWidth: 800 }}>
-              <UserTableHeadComponent
-                order={tablePhishing.order}
-                orderBy={tablePhishing.orderBy}
-                rowCount={phishingLogs.length}
-                numSelected={tablePhishing.selected.length}
-                onSort={tablePhishing.onSort}
-                onSelectAllRows={(checked) =>
-                  tablePhishing.onSelectAllRows(
-                    checked,
-                    phishingLogs.map((log) => log.id.toString())
-                  )
-                }
-                headLabel={[
-                  { id: 'url', label: 'URL' },
-                  { id: 'isSafe', label: 'Safe', align: 'center' },
-                  { id: 'timestamp', label: 'Timestamp' },
-                  { id: 'probability', label: 'Probability (%)', align: 'center' },
-                  { id: 'prediction', label: 'Prediction', align: 'center' },
-                  { id: 'error', label: 'Error', align: 'center' },
-                ]}
-              />
-              <TableBody>
-                {phishingLogs.length === 0 && !tablePhishing.filterName ? (
-                  <tr>
-                    <td colSpan={6} style={{ textAlign: 'center', padding: '20px' }}>
-                      <Typography variant="body2">No phishing logs available.</Typography>
-                    </td>
-                  </tr>
-                ) : (
-                  <>
-                    {dataFilteredPhishing
-                      .slice(
-                        tablePhishing.page * tablePhishing.rowsPerPage,
-                        tablePhishing.page * tablePhishing.rowsPerPage + tablePhishing.rowsPerPage
-                      )
-                      .map((row) => (
-                        <tr key={row.id} style={{ height: 68 }}>
-                          <td>{row.url}</td>
-                          <td style={{ textAlign: 'center' }}>
-                            <Tooltip title={row.isSafe ? 'Safe' : 'Unsafe'} arrow>
-                              <Box sx={{ display: 'inline-block' }}>{row.isSafe ? <SafeIcon /> : <UnsafeIcon />}</Box>
-                            </Tooltip>
-                          </td>
-                          <td>{row.timestamp}</td>
-                          <td style={{ textAlign: 'center' }}>{Math.round(row.probability * 100)}%</td>
-                          <td style={{ textAlign: 'center' }}>{row.prediction}</td>
-                          <td style={{ textAlign: 'center' }}>{row.error || 'N/A'}</td>
-                        </tr>
-                      ))}
-                    <TableEmptyRows
-                      height={68}
-                      emptyRows={emptyRows(tablePhishing.page, tablePhishing.rowsPerPage, phishingLogs.length)}
-                    />
-                    {notFoundPhishing && <TableNoData searchQuery={tablePhishing.filterName} />}
-                  </>
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Scrollbar>
-        <TablePagination
-          component="div"
-          page={tablePhishing.page}
-          count={dataFilteredPhishing.length}
-          rowsPerPage={tablePhishing.rowsPerPage}
-          onPageChange={tablePhishing.onChangePage}
-          rowsPerPageOptions={[5, 10, 25]}
-          onRowsPerPageChange={tablePhishing.onChangeRowsPerPage}
-        />
-      </Card>
-
-      {/* Ransomware Logs Table */}
-      <Card sx={{ mb: 4 }}>
-        <Typography variant="h6" sx={{ p: 2 }}>Ransomware Logs</Typography>
-        <TextField
-          fullWidth
-          value={tableRansomware.filterName}
-          onChange={(event) => {
-            tableRansomware.onFilterName(event.target.value);
-            tableRansomware.onResetPage();
-          }}
-          placeholder="Filter by URL or Wallet Address..."
-          sx={{ p: 2, maxWidth: '300px' }}
-        />
-        <Scrollbar>
-          <TableContainer>
-            <Table sx={{ minWidth: 800 }}>
-              <UserTableHeadComponent
-                order={tableRansomware.order}
-                orderBy={tableRansomware.orderBy}
-                rowCount={ransomwareLogs.length}
-                numSelected={tableRansomware.selected.length}
-                onSort={tableRansomware.onSort}
-                onSelectAllRows={(checked) =>
-                  tableRansomware.onSelectAllRows(
-                    checked,
-                    ransomwareLogs.map((log) => log.id.toString())
-                  )
-                }
-                headLabel={[
-                  { id: 'url', label: 'URL' },
-                  { id: 'isSafe', label: 'Safe', align: 'center' },
-                  { id: 'timestamp', label: 'Timestamp' },
-                  { id: 'probability', label: 'Probability (%)', align: 'center' },
-                  { id: 'walletAddress', label: 'Wallet Address', align: 'center' },
-                  { id: 'error', label: 'Error', align: 'center' },
-                ]}
-              />
-              <TableBody>
-                {ransomwareLogs.length === 0 && !tableRansomware.filterName ? (
-                  <tr>
-                    <td colSpan={6} style={{ textAlign: 'center', padding: '20px' }}>
-                      <Typography variant="body2">No ransomware logs available.</Typography>
-                    </td>
-                  </tr>
-                ) : (
-                  <>
-                    {dataFilteredRansomware
-                      .slice(
-                        tableRansomware.page * tableRansomware.rowsPerPage,
-                        tableRansomware.page * tableRansomware.rowsPerPage + tableRansomware.rowsPerPage
-                      )
-                      .map((row) => (
-                        <tr key={row.id} style={{ height: 68 }}>
-                          <td>{row.url}</td>
-                          <td style={{ textAlign: 'center' }}>
-                            <Tooltip title={row.isSafe ? 'Safe' : 'Unsafe'} arrow>
-                              <Box sx={{ display: 'inline-block' }}>{row.isSafe ? <SafeIcon /> : <UnsafeIcon />}</Box>
-                            </Tooltip>
-                          </td>
-                          <td>{row.timestamp}</td>
-                          <td style={{ textAlign: 'center' }}>{Math.round(row.probability * 100)}%</td>
-                          <td style={{ textAlign: 'center' }}>{row.walletAddress}</td>
-                          <td style={{ textAlign: 'center' }}>{row.error || 'N/A'}</td>
-                        </tr>
-                      ))}
-                    <TableEmptyRows
-                      height={68}
-                      emptyRows={emptyRows(tableRansomware.page, tableRansomware.rowsPerPage, ransomwareLogs.length)}
-                    />
-                    {notFoundRansomware && <TableNoData searchQuery={tableRansomware.filterName} />}
-                  </>
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Scrollbar>
-        <TablePagination
-          component="div"
-          page={tableRansomware.page}
-          count={dataFilteredRansomware.length}
-          rowsPerPage={tableRansomware.rowsPerPage}
-          onPageChange={tableRansomware.onChangePage}
-          rowsPerPageOptions={[5, 10, 25]} // Fixed syntax
-          onRowsPerPageChange={tableRansomware.onChangeRowsPerPage}
-        />
-      </Card>
-
-      {/* DoS Logs Table */}
-      <Card sx={{ mb: 4 }}>
-        <Typography variant="h6" sx={{ p: 2 }}>DoS Logs</Typography>
-        <TextField
-          fullWidth
-          value={tableDoS.filterName}
-          onChange={(event) => {
-            tableDoS.onFilterName(event.target.value);
-            tableDoS.onResetPage();
-          }}
-          placeholder="Filter by URL..."
-          sx={{ p: 2, maxWidth: '300px' }}
-        />
-        <Scrollbar>
-          <TableContainer>
-            <Table sx={{ minWidth: 800 }}>
-              <UserTableHeadComponent
-                order={tableDoS.order}
-                orderBy={tableDoS.orderBy}
-                rowCount={doSLogs.length}
-                numSelected={tableDoS.selected.length}
-                onSort={tableDoS.onSort}
-                onSelectAllRows={(checked) =>
-                  tableDoS.onSelectAllRows(
-                    checked,
-                    doSLogs.map((log) => log.id.toString())
-                  )
-                }
-                headLabel={[
-                  { id: 'url', label: 'URL' },
-                  { id: 'isSafe', label: 'Safe', align: 'center' },
-                  { id: 'timestamp', label: 'Timestamp' },
-                  { id: 'probability', label: 'Probability (%)', align: 'center' },
-                  { id: 'error', label: 'Error', align: 'center' },
-                ]}
-              />
-              <TableBody>
-                {doSLogs.length === 0 && !tableDoS.filterName ? (
-                  <tr>
-                    <td colSpan={5} style={{ textAlign: 'center', padding: '20px' }}>
-                      <Typography variant="body2">No DoS logs available.</Typography>
-                    </td>
-                  </tr>
-                ) : (
-                  <>
-                    {dataFilteredDoS
-                      .slice(
-                        tableDoS.page * tableDoS.rowsPerPage,
-                        tableDoS.page * tableDoS.rowsPerPage + tableDoS.rowsPerPage
-                      )
-                      .map((row) => (
-                        <tr key={row.id} style={{ height: 68 }}>
-                          <td>{row.url}</td>
-                          <td style={{ textAlign: 'center' }}>
-                            <Tooltip title={row.isSafe ? 'Safe' : 'Unsafe'} arrow>
-                              <Box sx={{ display: 'inline-block' }}>{row.isSafe ? <SafeIcon /> : <UnsafeIcon />}</Box>
-                            </Tooltip>
-                          </td>
-                          <td>{row.timestamp}</td>
-                          <td style={{ textAlign: 'center' }}>{Math.round(row.probability * 100)}%</td>
-                          <td style={{ textAlign: 'center' }}>{row.error || 'N/A'}</td>
-                        </tr>
-                      ))}
-                    <TableEmptyRows
-                      height={68}
-                      emptyRows={emptyRows(tableDoS.page, tableDoS.rowsPerPage, doSLogs.length)}
-                    />
-                    {notFoundDoS && <TableNoData searchQuery={tableDoS.filterName} />}
-                  </>
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Scrollbar>
-        <TablePagination
-          component="div"
-          page={tableDoS.page}
-          count={dataFilteredDoS.length}
-          rowsPerPage={tableDoS.rowsPerPage}
-          onPageChange={tableDoS.onChangePage}
-          rowsPerPageOptions={[5, 10, 25]}
-          onRowsPerPageChange={tableDoS.onChangeRowsPerPage}
-        />
-      </Card>
-
-      {/* Code Safety Logs Table */}
-      <Card>
-        <Typography variant="h6" sx={{ p: 2 }}>Code Safety Logs</Typography>
-        <TextField
-          fullWidth
-          value={tableCodeSafety.filterName}
-          onChange={(event) => {
-            tableCodeSafety.onFilterName(event.target.value);
-            tableCodeSafety.onResetPage();
-          }}
-          placeholder="Filter by URL or Prediction..."
-          sx={{ p: 2, maxWidth: '300px' }}
-        />
-        <Scrollbar>
-          <TableContainer>
-            <Table sx={{ minWidth: 800 }}>
-              <UserTableHeadComponent
-                order={tableCodeSafety.order}
-                orderBy={tableCodeSafety.orderBy}
-                rowCount={codeSafetyLogs.length}
-                numSelected={tableCodeSafety.selected.length}
-                onSort={tableCodeSafety.onSort}
-                onSelectAllRows={(checked) =>
-                  tableCodeSafety.onSelectAllRows(
-                    checked,
-                    codeSafetyLogs.map((log) => log.id.toString())
-                  )
-                }
-                headLabel={[
-                  { id: 'url', label: 'URL/Code' },
-                  { id: 'isSafe', label: 'Safe', align: 'center' },
-                  { id: 'timestamp', label: 'Timestamp' },
-                  { id: 'prediction', label: 'Prediction', align: 'center' },
-                  { id: 'anomalyScore', label: 'Anomaly Score', align: 'center' },
-                  { id: 'error', label: 'Error', align: 'center' },
-                ]}
-              />
-              <TableBody>
-                {codeSafetyLogs.length === 0 && !tableCodeSafety.filterName ? (
-                  <tr>
-                    <td colSpan={6} style={{ textAlign: 'center', padding: '20px' }}>
-                      <Typography variant="body2">No code safety logs available.</Typography>
-                    </td>
-                  </tr>
-                ) : (
-                  <>
-                    {dataFilteredCodeSafety
-                      .slice(
-                        tableCodeSafety.page * tableCodeSafety.rowsPerPage,
-                        tableCodeSafety.page * tableCodeSafety.rowsPerPage + tableCodeSafety.rowsPerPage
-                      )
-                      .map((row) => (
-                        <tr key={row.id} style={{ height: 68 }}>
-                          <td>{row.url}</td>
-                          <td style={{ textAlign: 'center' }}>
-                            <Tooltip title={row.isSafe ? 'Safe' : 'Unsafe'} arrow>
-                              <Box sx={{ display: 'inline-block' }}>{row.isSafe ? <SafeIcon /> : <UnsafeIcon />}</Box>
-                            </Tooltip>
-                          </td>
-                          <td>{row.timestamp}</td>
-                          <td style={{ textAlign: 'center' }}>{row.prediction}</td>
-                          <td style={{ textAlign: 'center' }}>{row.anomalyScore?.toFixed(2) || 'N/A'}</td>
-                          <td style={{ textAlign: 'center' }}>{row.error || 'N/A'}</td>
-                        </tr>
-                      ))}
-                    <TableEmptyRows
-                      height={68}
-                      emptyRows={emptyRows(tableCodeSafety.page, tableCodeSafety.rowsPerPage, codeSafetyLogs.length)}
-                    />
-                    {notFoundCodeSafety && <TableNoData searchQuery={tableCodeSafety.filterName} />}
-                  </>
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Scrollbar>
-        <TablePagination
-          component="div"
-          page={tableCodeSafety.page}
-          count={dataFilteredCodeSafety.length}
-          rowsPerPage={tableCodeSafety.rowsPerPage}
-          onPageChange={tableCodeSafety.onChangePage}
-          rowsPerPageOptions={[5, 10, 25]}
-          onRowsPerPageChange={tableCodeSafety.onChangeRowsPerPage}
-        />
-      </Card>
+      {renderTable('Phishing Logs', phishingData, phishingColumns, tablePhishing)}
+      {renderTable('Ransomware Logs', ransomwareData, ransomwareColumns, tableRansomware)}
+      {renderTable('DoS Logs', dosData, dosColumns, tableDoS)}
+      {renderTable('Code Safety Logs', codeSafetyData, codeSafetyColumns, tableCodeSafety)}
     </DashboardContent>
   );
 }

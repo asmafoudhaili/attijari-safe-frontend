@@ -1,4 +1,3 @@
-// src/sections/Logs/table-no-data.tsx
 import type { TableRowProps } from '@mui/material/TableRow';
 
 import Box from '@mui/material/Box';

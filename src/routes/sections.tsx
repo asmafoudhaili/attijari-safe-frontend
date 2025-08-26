@@ -9,6 +9,7 @@ import { varAlpha } from 'src/theme/styles';
 import { AuthLayout } from 'src/layouts/auth';
 import { DashboardLayout } from 'src/layouts/dashboard';
 import { LogsView } from 'src/sections/logs/view';
+import { ReclamationsView } from 'src/sections/reclamation/view';
 
 // ----------------------------------------------------------------------
 
@@ -61,6 +62,7 @@ export function Router() {
         { element: <HomePage />, index: true },
         { path: 'user', element: <UserPage /> },
         { path: 'logs', element: <LogsView /> },
+        { path: 'reclamations', element: <ReclamationsView /> },
         { path: 'products', element: <ProductsPage /> },
         { path: 'blog', element: <BlogPage /> },
       ],

@@ -1,4 +1,3 @@
-// src/sections/Logs/table-empty-rows.tsx
 import type { TableRowProps } from '@mui/material/TableRow';
 
 import TableRow from '@mui/material/TableRow';

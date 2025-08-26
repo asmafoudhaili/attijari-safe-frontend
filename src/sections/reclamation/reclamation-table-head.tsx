@@ -11,7 +11,7 @@ interface HeadLabel {
   align?: 'center' | 'left' | 'right';
 }
 
-interface LogsTableHeadProps {
+interface ReclamationTableHeadProps {
   order: 'asc' | 'desc';
   orderBy: string;
   rowCount: number;
@@ -21,7 +21,7 @@ interface LogsTableHeadProps {
   onSelectAllRows: (checked: boolean, newSelecteds: string[]) => void;
 }
 
-export default function LogsTableHead({
+export default function ReclamationTableHead({
   order,
   orderBy,
   rowCount,
@@ -29,7 +29,7 @@ export default function LogsTableHead({
   numSelected,
   onSort,
   onSelectAllRows,
-}: LogsTableHeadProps) {
+}: ReclamationTableHeadProps) {
   const visuallyHidden = {
     border: 0,
     margin: -1,
@@ -48,7 +48,7 @@ export default function LogsTableHead({
         {headLabel.map((headCell) => (
           <TableCell
             key={headCell.id}
-            align={headCell.align || 'center'}
+            align={headCell.align || 'left'}
             sortDirection={orderBy === headCell.id ? order : false}
           >
             <TableSortLabel
@@ -70,7 +70,7 @@ export default function LogsTableHead({
   );
 }
 
-LogsTableHead.propTypes = {
+ReclamationTableHead.propTypes = {
   order: PropTypes.oneOf(['asc', 'desc']).isRequired,
   orderBy: PropTypes.string.isRequired,
   rowCount: PropTypes.number.isRequired,

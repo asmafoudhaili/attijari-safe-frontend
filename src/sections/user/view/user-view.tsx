@@ -27,9 +27,14 @@ import { UserFormDialog, type UserProps } from '../user-form-dialog';
 import { emptyRows, applyFilter, getComparator } from '../utils';
 
 export function UserView() {
-  const table = useTable();
+  const tableAdmin = useTable();
+  const tableClient = useTable();
+  const tableEmployee = useTable();
   const [filterName, setFilterName] = useState('');
   const [users, setUsers] = useState<UserProps[]>([]);
+  const [admins, setAdmins] = useState<UserProps[]>([]);
+  const [clients, setClients] = useState<UserProps[]>([]);
+  const [employees, setEmployees] = useState<UserProps[]>([]);
   const [selectedUser, setSelectedUser] = useState<UserProps | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -38,7 +43,11 @@ export function UserView() {
   const fetchUsers = async () => {
     try {
       const response = await axiosInstance.get('/api/admin/users');
-      setUsers(response.data);
+      const allUsers = response.data;
+      setUsers(allUsers);
+      setAdmins(allUsers.filter((user: UserProps) => user.role === 'ADMIN'));
+      setClients(allUsers.filter((user: UserProps) => user.role === 'CLIENT'));
+      setEmployees(allUsers.filter((user: UserProps) => user.role === 'EMPLOYEE'));
     } catch (error) {
       console.error('Error fetching users:', error);
     }
@@ -48,8 +57,8 @@ export function UserView() {
     fetchUsers();
   }, []);
 
-  const handleAddUser = () => {
-    setSelectedUser(null);
+  const handleAddUser = (role: string) => {
+    setSelectedUser({ id: '', username: '', password: '', role, mobileNumber: '', gender: '' } as UserProps);
     setDialogOpen(true);
   };
 
@@ -102,19 +111,30 @@ export function UserView() {
     setMenuUserId(null);
   };
 
-  const dataFiltered = applyFilter({
-    inputData: users,
-    comparator: getComparator(table.order, table.orderBy),
+  const dataFilteredAdmin = applyFilter({
+    inputData: admins,
+    comparator: getComparator(tableAdmin.order, tableAdmin.orderBy),
     filterName,
   });
 
-  // Enhanced getAvatar function with debugging
- const getAvatar = (gender?: string) => {
-  const normalized = gender?.trim().toUpperCase();
-  if (normalized === 'FEMALE') return '/avatars/1.jpg';
-  if (normalized === 'MALE') return '/avatars/2.jpg';
-  return '/avatars/2.jpg'; // Default to male avatar if gender is missing or unknown
-};
+  const dataFilteredClient = applyFilter({
+    inputData: clients,
+    comparator: getComparator(tableClient.order, tableClient.orderBy),
+    filterName,
+  });
+
+  const dataFilteredEmployee = applyFilter({
+    inputData: employees,
+    comparator: getComparator(tableEmployee.order, tableEmployee.orderBy),
+    filterName,
+  });
+
+  const getAvatar = (gender?: string) => {
+    const normalized = gender?.trim().toUpperCase();
+    if (normalized === 'FEMALE') return 'public/assets/images/avatar/1.jpg';
+    if (normalized === 'MALE') return 'public/assets/images/avatar/2.jpg';
+    return '/avatars/2.jpg';
+  };
 
   return (
     <DashboardContent>
@@ -126,19 +146,39 @@ export function UserView() {
           variant="contained"
           color="inherit"
           startIcon={<Iconify icon="mingcute:add-line" />}
-          onClick={handleAddUser}
+          onClick={() => handleAddUser('ADMIN')}
         >
-          New user
+          New Admin
+        </Button>
+        <Button
+          variant="contained"
+          color="inherit"
+          startIcon={<Iconify icon="mingcute:add-line" />}
+          onClick={() => handleAddUser('CLIENT')}
+          sx={{ ml: 1 }}
+        >
+          New Client
+        </Button>
+        <Button
+          variant="contained"
+          color="inherit"
+          startIcon={<Iconify icon="mingcute:add-line" />}
+          onClick={() => handleAddUser('EMPLOYEE')}
+          sx={{ ml: 1 }}
+        >
+          New Employee
         </Button>
       </Box>
 
       <Card>
         <UserTableToolbar
-          numSelected={table.selected.length}
+          numSelected={tableAdmin.selected.length}
           filterName={filterName}
           onFilterName={(event) => {
             setFilterName(event.target.value);
-            table.onResetPage();
+            tableAdmin.onResetPage();
+            tableClient.onResetPage();
+            tableEmployee.onResetPage();
           }}
         />
 
@@ -155,7 +195,7 @@ export function UserView() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {dataFiltered.map((row) => (
+                {dataFilteredAdmin.map((row) => (
                   <TableRow key={row.id}>
                     <TableCell align="center">
                       <img 
@@ -164,7 +204,7 @@ export function UserView() {
                         width={40} 
                         height={40} 
                         style={{ borderRadius: '50%' }}
-                        onError={(e) => console.log('Image load error for:', row.username, e)} // Debug image load failure
+                        onError={(e) => console.log('Image load error for:', row.username, e)}
                       />
                     </TableCell>
                     <TableCell align="center">{row.username}</TableCell>
@@ -191,7 +231,6 @@ export function UserView() {
                           <Iconify icon="eva:edit-fill" sx={{ mr: 2 }} />
                           Edit
                         </MenuItem>
-
                         <MenuItem
                           onClick={() => handleDeleteUser(row.id)}
                           sx={{ color: 'error.main' }}
@@ -203,20 +242,192 @@ export function UserView() {
                     </TableCell>
                   </TableRow>
                 ))}
+                <TableEmptyRows height={53} emptyRows={emptyRows(tableAdmin.page, tableAdmin.rowsPerPage, admins.length)} />
               </TableBody>
             </Table>
+            <TablePagination
+              component="div"
+              page={tableAdmin.page}
+              count={admins.length}
+              rowsPerPage={tableAdmin.rowsPerPage}
+              onPageChange={tableAdmin.onChangePage}
+              rowsPerPageOptions={[5, 10, 25]}
+              onRowsPerPageChange={tableAdmin.onChangeRowsPerPage}
+            />
           </TableContainer>
         </Scrollbar>
+      </Card>
 
-        <TablePagination
-          component="div"
-          page={table.page}
-          count={users.length}
-          rowsPerPage={table.rowsPerPage}
-          onPageChange={table.onChangePage}
-          rowsPerPageOptions={[5, 10, 25]}
-          onRowsPerPageChange={table.onChangeRowsPerPage}
+      <Card sx={{ mt: 4 }}>
+        <UserTableToolbar
+          numSelected={tableClient.selected.length}
+          filterName={filterName}
+          onFilterName={(event) => {
+            setFilterName(event.target.value);
+            tableClient.onResetPage();
+          }}
         />
+
+        <Scrollbar>
+          <TableContainer sx={{ overflow: 'unset' }}>
+            <Table sx={{ minWidth: 800 }}>
+              <TableHead>
+                <TableRow>
+                  <TableCell align="center" sx={{ width: '20%' }}>Avatar</TableCell>
+                  <TableCell align="center" sx={{ width: '25%' }}>Username</TableCell>
+                  <TableCell align="center" sx={{ width: '25%' }}>Role</TableCell>
+                  <TableCell align="center" sx={{ width: '25%' }}>Mobile Number</TableCell>
+                  <TableCell align="center" sx={{ width: '20%' }}>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {dataFilteredClient.map((row) => (
+                  <TableRow key={row.id}>
+                    <TableCell align="center">
+                      <img 
+                        src={getAvatar(row.gender)} 
+                        alt="user-avatar" 
+                        width={40} 
+                        height={40} 
+                        style={{ borderRadius: '50%' }}
+                        onError={(e) => console.log('Image load error for:', row.username, e)}
+                      />
+                    </TableCell>
+                    <TableCell align="center">{row.username}</TableCell>
+                    <TableCell align="center">{row.role}</TableCell>
+                    <TableCell align="center">{row.mobileNumber}</TableCell>
+                    <TableCell align="center">
+                      <IconButton onClick={(event) => handleMenuOpen(event, row.id)}>
+                        <Iconify icon="eva:more-vertical-fill" />
+                      </IconButton>
+                      <Menu
+                        anchorEl={anchorEl}
+                        open={menuUserId === row.id}
+                        onClose={handleMenuClose}
+                        PaperProps={{
+                          sx: { width: 160 },
+                        }}
+                        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                      >
+                        <MenuItem
+                          onClick={() => handleEditUser(row)}
+                          sx={{ color: 'text.secondary' }}
+                        >
+                          <Iconify icon="eva:edit-fill" sx={{ mr: 2 }} />
+                          Edit
+                        </MenuItem>
+                        <MenuItem
+                          onClick={() => handleDeleteUser(row.id)}
+                          sx={{ color: 'error.main' }}
+                        >
+                          <Iconify icon="eva:trash-2-outline" sx={{ mr: 2 }} />
+                          Delete
+                        </MenuItem>
+                      </Menu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                <TableEmptyRows height={53} emptyRows={emptyRows(tableClient.page, tableClient.rowsPerPage, clients.length)} />
+              </TableBody>
+            </Table>
+            <TablePagination
+              component="div"
+              page={tableClient.page}
+              count={clients.length}
+              rowsPerPage={tableClient.rowsPerPage}
+              onPageChange={tableClient.onChangePage}
+              rowsPerPageOptions={[5, 10, 25]}
+              onRowsPerPageChange={tableClient.onChangeRowsPerPage}
+            />
+          </TableContainer>
+        </Scrollbar>
+      </Card>
+
+      <Card sx={{ mt: 4 }}>
+        <UserTableToolbar
+          numSelected={tableEmployee.selected.length}
+          filterName={filterName}
+          onFilterName={(event) => {
+            setFilterName(event.target.value);
+            tableEmployee.onResetPage();
+          }}
+        />
+
+        <Scrollbar>
+          <TableContainer sx={{ overflow: 'unset' }}>
+            <Table sx={{ minWidth: 800 }}>
+              <TableHead>
+                <TableRow>
+                  <TableCell align="center" sx={{ width: '20%' }}>Avatar</TableCell>
+                  <TableCell align="center" sx={{ width: '25%' }}>Username</TableCell>
+                  <TableCell align="center" sx={{ width: '25%' }}>Role</TableCell>
+                  <TableCell align="center" sx={{ width: '25%' }}>Mobile Number</TableCell>
+                  <TableCell align="center" sx={{ width: '20%' }}>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {dataFilteredEmployee.map((row) => (
+                  <TableRow key={row.id}>
+                    <TableCell align="center">
+                      <img 
+                        src={getAvatar(row.gender)} 
+                        alt="user-avatar" 
+                        width={40} 
+                        height={40} 
+                        style={{ borderRadius: '50%' }}
+                        onError={(e) => console.log('Image load error for:', row.username, e)}
+                      />
+                    </TableCell>
+                    <TableCell align="center">{row.username}</TableCell>
+                    <TableCell align="center">{row.role}</TableCell>
+                    <TableCell align="center">{row.mobileNumber}</TableCell>
+                    <TableCell align="center">
+                      <IconButton onClick={(event) => handleMenuOpen(event, row.id)}>
+                        <Iconify icon="eva:more-vertical-fill" />
+                      </IconButton>
+                      <Menu
+                        anchorEl={anchorEl}
+                        open={menuUserId === row.id}
+                        onClose={handleMenuClose}
+                        PaperProps={{
+                          sx: { width: 160 },
+                        }}
+                        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                      >
+                        <MenuItem
+                          onClick={() => handleEditUser(row)}
+                          sx={{ color: 'text.secondary' }}
+                        >
+                          <Iconify icon="eva:edit-fill" sx={{ mr: 2 }} />
+                          Edit
+                        </MenuItem>
+                        <MenuItem
+                          onClick={() => handleDeleteUser(row.id)}
+                          sx={{ color: 'error.main' }}
+                        >
+                          <Iconify icon="eva:trash-2-outline" sx={{ mr: 2 }} />
+                          Delete
+                        </MenuItem>
+                      </Menu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                <TableEmptyRows height={53} emptyRows={emptyRows(tableEmployee.page, tableEmployee.rowsPerPage, employees.length)} />
+              </TableBody>
+            </Table>
+            <TablePagination
+              component="div"
+              page={tableEmployee.page}
+              count={employees.length}
+              rowsPerPage={tableEmployee.rowsPerPage}
+              onPageChange={tableEmployee.onChangePage}
+              rowsPerPageOptions={[5, 10, 25]}
+              onRowsPerPageChange={tableEmployee.onChangeRowsPerPage}
+            />
+          </TableContainer>
+        </Scrollbar>
       </Card>
 
       <UserFormDialog

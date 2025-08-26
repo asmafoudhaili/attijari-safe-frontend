@@ -9,13 +9,13 @@ import { Iconify } from 'src/components/iconify';
 
 // ----------------------------------------------------------------------
 
-type LogsTableToolbarProps = {
+type ReclamationTableToolbarProps = {
   numSelected: number;
   filterName: string;
   onFilterName: (event: React.ChangeEvent<HTMLInputElement>) => void;
 };
 
-export function LogsTableToolbar({ numSelected, filterName, onFilterName }: LogsTableToolbarProps) {
+export function ReclamationTableToolbar({ numSelected, filterName, onFilterName }: ReclamationTableToolbarProps) {
   return (
     <Toolbar
       sx={{
@@ -38,7 +38,7 @@ export function LogsTableToolbar({ numSelected, filterName, onFilterName }: Logs
           fullWidth
           value={filterName}
           onChange={onFilterName}
-          placeholder="Search Logs..."
+          placeholder="Search Reclamation..."
           startAdornment={
             <InputAdornment position="start">
               <Iconify width={20} icon="eva:search-fill" sx={{ color: 'text.disabled' }} />
