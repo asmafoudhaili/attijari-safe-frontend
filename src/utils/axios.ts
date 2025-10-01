@@ -32,6 +32,7 @@ axiosInstance.interceptors.response.use(
     if (error.response?.status === 401 || error.response?.status === 403) {
       localStorage.removeItem('isAuthenticated');
       localStorage.removeItem('token');
+      localStorage.removeItem('username');
       window.location.href = '/sign-in';
     }
     return Promise.reject(error);

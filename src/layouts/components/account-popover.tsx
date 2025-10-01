@@ -14,6 +14,8 @@ import MenuItem, { menuItemClasses } from '@mui/material/MenuItem';
 
 import { useRouter, usePathname } from 'src/routes/hooks';
 
+import axios from 'src/utils/axios';
+
 import { _myAccount } from 'src/_mock';
 
 // ----------------------------------------------------------------------
@@ -50,6 +52,32 @@ export function AccountPopover({ data = [], sx, ...other }: AccountPopoverProps)
     [handleClosePopover, router]
   );
 
+  const handleLogout = useCallback(async () => {
+    try {
+      // Call the backend logout endpoint
+      await axios.post('/api/logout');
+      
+      // Clear local storage
+      localStorage.removeItem('isAuthenticated');
+      localStorage.removeItem('token');
+      localStorage.removeItem('username');
+      
+      // Close the popover
+      handleClosePopover();
+      
+      // Redirect to sign-in page
+      router.push('/sign-in');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if the backend call fails, we should still clear local storage and redirect
+      localStorage.removeItem('isAuthenticated');
+      localStorage.removeItem('token');
+      localStorage.removeItem('username');
+      handleClosePopover();
+      router.push('/sign-in');
+    }
+  }, [handleClosePopover, router]);
+
   return (
     <>
       <IconButton
@@ -83,11 +111,15 @@ export function AccountPopover({ data = [], sx, ...other }: AccountPopoverProps)
       >
         <Box sx={{ p: 2, pb: 1.5 }}>
           <Typography variant="subtitle2" noWrap>
-            {_myAccount?.displayName}
+            {(() => {
+              const username = localStorage.getItem('username');
+              console.log('Account popover - Username from localStorage:', username);
+              return username || 'Admin';
+            })()}
           </Typography>
 
           <Typography variant="body2" sx={{ color: 'text.secondary' }} noWrap>
-            {_myAccount?.email}
+            Admin User
           </Typography>
         </Box>
 
@@ -129,7 +161,7 @@ export function AccountPopover({ data = [], sx, ...other }: AccountPopoverProps)
         <Divider sx={{ borderStyle: 'dashed' }} />
 
         <Box sx={{ p: 1 }}>
-          <Button fullWidth color="error" size="medium" variant="text">
+          <Button fullWidth color="error" size="medium" variant="text" onClick={handleLogout}>
             Logout
           </Button>
         </Box>

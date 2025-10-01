@@ -1,20 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'src/routes/hooks';
-import axios from 'src/utils/axios';
 
 import Grid from '@mui/material/Unstable_Grid2';
 import Typography from '@mui/material/Typography';
 
-import { _tasks, _posts, _timeline } from 'src/_mock';
+import { useRouter } from 'src/routes/hooks';
+
+import axios from 'src/utils/axios';
+
+// Removed unused mock data imports
 import { DashboardContent } from 'src/layouts/dashboard';
 
-import { AnalyticsNews } from '../analytics-news';
-import { AnalyticsTasks } from '../analytics-tasks';
 import { AnalyticsCurrentVisits } from '../analytics-current-visits';
-import { AnalyticsOrderTimeline } from '../analytics-order-timeline';
 import { AnalyticsWebsiteVisits } from '../analytics-website-visits';
 import { AnalyticsWidgetSummary } from '../analytics-widget-summary';
-import { AnalyticsTrafficBySite } from '../analytics-traffic-by-site';
 import { AnalyticsCurrentSubject } from '../analytics-current-subject';
 import { AnalyticsConversionRates } from '../analytics-conversion-rates';
 
@@ -108,26 +106,7 @@ export function OverviewAnalyticsView() {
     };
   };
 
-  const safeLogsData = () => {
-    const safeLogs = logs.filter((log) => log.isSafe);
-    const months = getMonths(safeLogs);
-    const series = months.map((month) =>
-      safeLogs.filter((log) => log.timestamp?.startsWith(month)).length
-    );
-
-    const currentMonthCount = series[series.length - 1] || 0;
-    const previousMonthCount = series[series.length - 2] || 0;
-    const percent = calculatePercentChange(currentMonthCount, previousMonthCount);
-
-    return {
-      total: safeLogs.length,
-      percent,
-      chart: {
-        categories: months,
-        series,
-      },
-    };
-  };
+  // Removed safeLogsData - not used in simplified dashboard
 
   const unsafeLogsData = () => {
     const unsafeLogs = logs.filter((log) => !log.isSafe);
@@ -150,24 +129,33 @@ export function OverviewAnalyticsView() {
     };
   };
 
-  const phishingLogsData = () => {
-    const phishingLogs = logs.filter((log) => log.type === 'PHISHING');
-    const months = getMonths(phishingLogs);
-    const series = months.map((month) =>
-      phishingLogs.filter((log) => log.timestamp?.startsWith(month)).length
-    );
+  // Removed phishingLogsData - not used in simplified dashboard
 
-    const currentMonthCount = series[series.length - 1] || 0;
-    const previousMonthCount = series[series.length - 2] || 0;
-    const percent = calculatePercentChange(currentMonthCount, previousMonthCount);
+  // Removed ransomwareLogsData - not used in simplified dashboard
 
+  // Removed dosLogsData - not used in simplified dashboard
+
+  const threatDetectionRate = () => {
+    const totalLogs = logs.length;
+    const unsafeLogs = logs.filter((log) => !log.isSafe).length;
+    const detectionRate = totalLogs > 0 ? (unsafeLogs / totalLogs) * 100 : 0;
+    
     return {
-      total: phishingLogs.length,
-      percent,
-      chart: {
-        categories: months,
-        series,
-      },
+      rate: Math.round(detectionRate * 100) / 100,
+      total: totalLogs,
+      detected: unsafeLogs,
+    };
+  };
+
+  const securityScore = () => {
+    const totalLogs = logs.length;
+    const safeLogs = logs.filter((log) => log.isSafe).length;
+    const score = totalLogs > 0 ? (safeLogs / totalLogs) * 100 : 100;
+    
+    return {
+      score: Math.round(score * 100) / 100,
+      total: totalLogs,
+      safe: safeLogs,
     };
   };
 
@@ -183,8 +171,8 @@ export function OverviewAnalyticsView() {
     return {
       categories: types,
       series: [
-        { name: 'Safe', data: safeCounts },
-        { name: 'Unsafe', data: unsafeCounts },
+        { name: 'Safe Logs', data: safeCounts },
+        { name: 'Threats Detected', data: unsafeCounts },
       ],
     };
   };
@@ -221,19 +209,19 @@ export function OverviewAnalyticsView() {
       .filter((log) => typeof log.timestamp === 'string')
       .map((log) => log.timestamp!.split(' ')[0]))];
 
-    const phishingCounts = dates.map((date) =>
-      logs.filter((log) => log.timestamp?.startsWith(date) && log.type === 'PHISHING').length
-    );
-    const codeSafetyCounts = dates.map((date) =>
-      logs.filter((log) => log.timestamp?.startsWith(date) && log.type === 'CODE_SAFETY').length
-    );
+    // Get all unique threat types
+    const threatTypes = [...new Set(logs.map((log) => log.type))];
+    
+    const series = threatTypes.map((type) => ({
+      name: type,
+      data: dates.map((date) =>
+        logs.filter((log) => log.timestamp?.startsWith(date) && log.type === type).length
+      ),
+    }));
 
     return {
       categories: dates,
-      series: [
-        { name: 'PHISHING', data: phishingCounts },
-        { name: 'CODE_SAFETY', data: codeSafetyCounts },
-      ],
+      series,
     };
   };
 
@@ -266,9 +254,10 @@ export function OverviewAnalyticsView() {
       </Typography>
 
       <Grid container spacing={3}>
+        {/* Most Important Security Metrics */}
         <Grid xs={12} sm={6} md={3}>
           <AnalyticsWidgetSummary
-            title="Total Logs"
+            title="Total Threats"
             percent={totalLogsData().percent}
             total={totalLogsData().total}
             color="secondary"
@@ -276,9 +265,10 @@ export function OverviewAnalyticsView() {
             chart={totalLogsData().chart}
           />
         </Grid>
+        
         <Grid xs={12} sm={6} md={3}>
           <AnalyticsWidgetSummary
-            title="Unsafe Logs"
+            title="Active Threats"
             percent={unsafeLogsData().percent}
             total={unsafeLogsData().total}
             color="error"
@@ -289,80 +279,65 @@ export function OverviewAnalyticsView() {
 
         <Grid xs={12} sm={6} md={3}>
           <AnalyticsWidgetSummary
-            title="Safe Logs"
-            percent={safeLogsData().percent}
-            total={safeLogsData().total}
+            title="Security Score"
+            percent={securityScore().score}
+            total={securityScore().score}
             color="success"
             icon={<img alt="icon" src="/assets/icons/glass/shield.svg" />}
-            chart={safeLogsData().chart}
+            chart={{
+              categories: ['Security Score'],
+              series: [securityScore().score],
+            }}
           />
         </Grid>
 
         <Grid xs={12} sm={6} md={3}>
           <AnalyticsWidgetSummary
-            title="PHISHING Logs"
-            percent={phishingLogsData().percent}
-            total={phishingLogsData().total}
+            title="Threat Detection Rate"
+            percent={threatDetectionRate().rate}
+            total={threatDetectionRate().rate}
             color="error"
             icon={<img alt="icon" src="/assets/icons/glass/danger.svg" />}
-            chart={phishingLogsData().chart}
+            chart={{
+              categories: ['Detection Rate'],
+              series: [threatDetectionRate().rate],
+            }}
+          />
+        </Grid>
+
+        {/* Main Security Charts */}
+        <Grid xs={12} md={6} lg={8}>
+          <AnalyticsWebsiteVisits
+            title="All Threat Types Over Time"
+            subheader="Complete threat detection timeline by type"
+            chart={websiteVisitsData()}
           />
         </Grid>
 
         <Grid xs={12} md={6} lg={4}>
           <AnalyticsCurrentVisits
-            title="Safe vs Unsafe Logs"
+            title="Security Status Overview"
             chart={currentVisitsData()}
           />
         </Grid>
 
         <Grid xs={12} md={6} lg={8}>
-          <AnalyticsWebsiteVisits
-            title="Logs Over Time"
-            subheader="PHISHING vs CODE_SAFETY Logs by Date"
-            chart={websiteVisitsData()}
-          />
-        </Grid>
-
-        <Grid xs={12} md={6} lg={8}>
           <AnalyticsConversionRates
-            title="Log Safety by Type"
-            subheader="Safe vs Unsafe Logs by Type"
+            title="Threat Analysis by Type"
+            subheader="Safe Logs vs Threats Detected by Type"
             chart={conversionRatesData()}
           />
         </Grid>
 
         <Grid xs={12} md={6} lg={4}>
           <AnalyticsCurrentSubject
-            title="Safe Logs by Type"
-            subheader="Distribution of Safe Logs"
+            title="Threat Distribution"
+            subheader="Safe vs Unsafe Logs by Type"
             chart={currentSubjectData()}
           />
         </Grid>
 
-        <Grid xs={12} md={6} lg={8}>
-          <AnalyticsNews title="News" list={_posts.slice(0, 5)} />
-        </Grid>
-
-        <Grid xs={12} md={6} lg={4}>
-          <AnalyticsOrderTimeline title="Order timeline" list={_timeline} />
-        </Grid>
-
-        <Grid xs={12} md={6} lg={4}>
-          <AnalyticsTrafficBySite
-            title="Traffic by site"
-            list={[
-              { value: 'facebook', label: 'Facebook', total: 323234 },
-              { value: 'google', label: 'Google', total: 341212 },
-              { value: 'linkedin', label: 'Linkedin', total: 411213 },
-              { value: 'twitter', label: 'Twitter', total: 443232 },
-            ]}
-          />
-        </Grid>
-
-        <Grid xs={12} md={6} lg={8}>
-          <AnalyticsTasks title="Tasks" list={_tasks} />
-        </Grid>
+        {/* Removed News, Order timeline, Traffic by site, and Tasks components */}
       </Grid>
     </DashboardContent>
   );

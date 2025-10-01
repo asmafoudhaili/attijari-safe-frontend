@@ -1,27 +1,30 @@
 import { useState, useEffect, useCallback } from 'react';
+import { EventSourcePolyfill } from 'event-source-polyfill';
+
 import Box from '@mui/material/Box';
 import List from '@mui/material/List';
 import Badge from '@mui/material/Badge';
+import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Avatar from '@mui/material/Avatar';
 import Divider from '@mui/material/Divider';
 import Tooltip from '@mui/material/Tooltip';
 import Popover from '@mui/material/Popover';
+import Snackbar from '@mui/material/Snackbar';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import ListItemText from '@mui/material/ListItemText';
 import ListSubheader from '@mui/material/ListSubheader';
 import ListItemAvatar from '@mui/material/ListItemAvatar';
 import ListItemButton from '@mui/material/ListItemButton';
-import Snackbar from '@mui/material/Snackbar';
-import Alert from '@mui/material/Alert';
+
+import { useRouter } from 'src/routes/hooks';
 
 import axios from 'src/utils/axios';
 import { fToNow } from 'src/utils/format-time';
+
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
-import { useRouter } from 'src/routes/hooks';
-import { EventSourcePolyfill } from 'event-source-polyfill';
 
 // ----------------------------------------------------------------------
 
@@ -55,7 +58,7 @@ interface NotificationResponse {
 }
 
 const SPRING_BOOT_URL = 'http://localhost:8080';
-const FASTAPI_URL = 'http://localhost:8000';
+  // Removed unused FASTAPI_URL
 
 export function NotificationsPopover({ sx, ...other }: NotificationsPopoverProps) {
   const router = useRouter();
@@ -371,7 +374,7 @@ function NotificationItem({ notification, isLatestTwoUnread }: NotificationItemC
         px: 2.5,
         mt: '1px',
         ...(isLatestTwoUnread && {
-          bgcolor: 'rgba(134, 100, 251, 0.5)',
+          bgcolor: 'background.neutral',
         }),
       }}
     >

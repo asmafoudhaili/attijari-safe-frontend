@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
-import axios from 'src/utils/axios';
+
 import Box from '@mui/material/Box';
-import Link from '@mui/material/Link';
 import Divider from '@mui/material/Divider';
 import TextField from '@mui/material/TextField';
 import IconButton from '@mui/material/IconButton';
@@ -10,6 +9,9 @@ import LoadingButton from '@mui/lab/LoadingButton';
 import InputAdornment from '@mui/material/InputAdornment';
 
 import { useRouter } from 'src/routes/hooks';
+
+import axios from 'src/utils/axios';
+
 import { Iconify } from 'src/components/iconify';
 
 export function SignInView() {
@@ -31,7 +33,9 @@ export function SignInView() {
         console.log('Login successful - Token received:', token);
         localStorage.setItem('isAuthenticated', 'true');
         localStorage.setItem('token', token);
+        localStorage.setItem('username', email); // Store the username
         console.log('Token stored in localStorage:', localStorage.getItem('token'));
+        console.log('Username stored in localStorage:', localStorage.getItem('username'));
         router.push('/');
       }
     } catch (error) {

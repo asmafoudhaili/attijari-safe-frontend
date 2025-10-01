@@ -1,27 +1,31 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
+
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Table from '@mui/material/Table';
+import Alert from '@mui/material/Alert';
+import Button from '@mui/material/Button';
+import Snackbar from '@mui/material/Snackbar';
 import TableBody from '@mui/material/TableBody';
+import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import TableContainer from '@mui/material/TableContainer';
 import TablePagination from '@mui/material/TablePagination';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
-import Tooltip from '@mui/material/Tooltip';
-import Snackbar from '@mui/material/Snackbar';
-import Alert from '@mui/material/Alert';
 
 import { useRouter } from 'src/routes/hooks';
-import { DashboardContent } from 'src/layouts/dashboard';
+import { useTable } from 'src/routes/hooks/use-table';
+
 import axios from 'src/utils/axios';
-import { Scrollbar } from 'src/components/scrollbar';
+
+import { DashboardContent } from 'src/layouts/dashboard';
+
 import { Iconify } from 'src/components/iconify';
+import { Scrollbar } from 'src/components/scrollbar';
+
 import { TableNoData } from 'src/sections/user/table-no-data';
 import { TableEmptyRows } from 'src/sections/user/table-empty-rows';
-import LogsTableHeadComponent from 'src/sections/reclamation/reclamation-table-head';
 import { emptyRows, applyFilter, getComparator } from 'src/sections/user/utils';
-import { useTable } from 'src/routes/hooks/use-table';
+import LogsTableHeadComponent from 'src/sections/reclamation/reclamation-table-head';
 
 interface ReclamationLog {
   id: number;
@@ -34,21 +38,7 @@ interface ReclamationLog {
   isSafe: boolean;
 }
 
-function SafeIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 48 48">
-      <path fill="#75d35a" fillRule="evenodd" d="M24 44c11.046 0 20-8.954 20-20S35.046 4 24 4S4 12.954 4 24s8.954 20 20 20m10.742-26.33a1 1 0 1 0-1.483-1.34L21.28 29.567l-6.59-6.291a1 1 0 0 0-1.382 1.446l7.334 7l.743.71l.689-.762z" clipRule="evenodd" />
-    </svg>
-  );
-}
-
-function UnsafeIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-      <path fill="#fc1a02" fillRule="evenodd" d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2S2 6.477 2 12s4.477 10 10 10m4.066-14.066a.75.75 0 0 1 0 1.06L13.06 12l3.005 3.005a.75.75 0 0 1-1.06 1.06L12 13.062l-3.005 3.005a.75.75 0 1 1-1.06-1.06L10.938 12L7.934 8.995a.75.75 0 1 1 1.06-1.06L12 10.938l3.005-3.005a.75.75 0 0 1 1.06 0" clipRule="evenodd" />
-    </svg>
-  );
-}
+// Removed unused SafeIcon and UnsafeIcon components
 
 export function ReclamationsView() {
   const router = useRouter();
@@ -95,7 +85,7 @@ export function ReclamationsView() {
         const token = localStorage.getItem('token');
         if (!token) throw new Error('Not authenticated');
 
-        const payload = { id, isSafe, processed: true };
+const payload = { id, safe: isSafe, processed: true };
         const response = await axios.post(`${SPRING_BOOT_URL}/api/admin/confirm-reclamation`, payload, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -106,7 +96,7 @@ export function ReclamationsView() {
         setSnackbar({ open: true, message: `Reclamation marked as ${isSafe ? 'safe' : 'not safe'}`, severity: 'success' });
 
         // Refresh notifications to reflect updated safe status
-        const notificationResponse = await axios.get(`${SPRING_BOOT_URL}/api/admin/notifications/history`, {
+        await axios.get(`${SPRING_BOOT_URL}/api/admin/notifications/history`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         // Assuming NotificationsPopover listens to this endpoint or SSE updates
@@ -152,7 +142,18 @@ export function ReclamationsView() {
     <DashboardContent>
       <Box display="flex" alignItems="center" mb={5}>
         <Typography variant="h4" flexGrow={1}>Reclamations</Typography>
-        <Button variant="contained" color="inherit" startIcon={<Iconify icon="mdi:refresh" />} onClick={fetchReclamations}>
+        <Button 
+          variant="contained" 
+          startIcon={<Iconify icon="mdi:refresh" />} 
+          onClick={fetchReclamations}
+          sx={{
+            backgroundColor: '#7b38ff',
+            color: '#FFFFFF',
+            '&:hover': {
+              backgroundColor: '#6a2ed8',
+            },
+          }}
+        >
           Refresh
         </Button>
       </Box>
@@ -188,14 +189,13 @@ export function ReclamationsView() {
                   { id: 'details', label: 'URL/Details' },
                   { id: 'threatType', label: 'Threat Type', align: 'center' },
                   { id: 'user', label: 'User' },
-                  { id: 'timestamp', label: 'Timestamp' },
                   { id: 'actions', label: 'Actions', align: 'center' },
                 ]}
               />
               <TableBody>
                 {reclamationLogs.length === 0 && !table.filterName ? (
                   <tr>
-                    <td colSpan={5} style={{ textAlign: 'center', padding: '20px' }}>
+                    <td colSpan={4} style={{ textAlign: 'center', padding: '20px' }}>
                       <Typography variant="body2">No unprocessed reclamations available.</Typography>
                     </td>
                   </tr>
@@ -213,7 +213,6 @@ export function ReclamationsView() {
                             {row.threatType.charAt(0).toUpperCase() + row.threatType.slice(1)}
                           </td>
                           <td>{row.user}</td>
-                          <td>{row.timestamp}</td>
                           <td style={{ textAlign: 'center' }}>
                             <Button
                               variant="contained"

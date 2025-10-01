@@ -1,37 +1,42 @@
 import React, { useState, useEffect } from 'react';
+
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import TablePagination from '@mui/material/TablePagination';
-import axiosInstance from 'src/utils/axios';
-import { DashboardContent } from 'src/layouts/dashboard';
-import { Iconify } from 'src/components/iconify';
-import { Scrollbar } from 'src/components/scrollbar';
-import { useTable } from 'src/routes/hooks/use-table';
 import {
+  Menu,
   Table,
+  TableRow,
+  MenuItem,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
-  TableRow,
   IconButton,
-  Menu,
-  MenuItem
+  TableContainer
 } from '@mui/material';
+
+import { useTable } from 'src/routes/hooks/use-table';
+
+import axiosInstance from 'src/utils/axios';
+
+import { DashboardContent } from 'src/layouts/dashboard';
+
+import { Iconify } from 'src/components/iconify';
+import { Scrollbar } from 'src/components/scrollbar';
 
 import { TableEmptyRows } from '../table-empty-rows';
 import { UserTableToolbar } from '../user-table-toolbar';
-import { UserFormDialog, type UserProps } from '../user-form-dialog';
 import { emptyRows, applyFilter, getComparator } from '../utils';
+import { UserFormDialog, type UserProps } from '../user-form-dialog';
 
 export function UserView() {
   const tableAdmin = useTable();
   const tableClient = useTable();
   const tableEmployee = useTable();
   const [filterName, setFilterName] = useState('');
-  const [users, setUsers] = useState<UserProps[]>([]);
+  // Removed unused users state
   const [admins, setAdmins] = useState<UserProps[]>([]);
   const [clients, setClients] = useState<UserProps[]>([]);
   const [employees, setEmployees] = useState<UserProps[]>([]);
@@ -44,7 +49,7 @@ export function UserView() {
     try {
       const response = await axiosInstance.get('/api/admin/users');
       const allUsers = response.data;
-      setUsers(allUsers);
+      // Removed setUsers call - users state no longer exists
       setAdmins(allUsers.filter((user: UserProps) => user.role === 'ADMIN'));
       setClients(allUsers.filter((user: UserProps) => user.role === 'CLIENT'));
       setEmployees(allUsers.filter((user: UserProps) => user.role === 'EMPLOYEE'));
@@ -144,27 +149,45 @@ export function UserView() {
         </Typography>
         <Button
           variant="contained"
-          color="inherit"
           startIcon={<Iconify icon="mingcute:add-line" />}
           onClick={() => handleAddUser('ADMIN')}
+          sx={{
+            backgroundColor: '#7b38ff',
+            color: '#FFFFFF',
+            '&:hover': {
+              backgroundColor: '#6a2ed8',
+            },
+          }}
         >
           New Admin
         </Button>
         <Button
           variant="contained"
-          color="inherit"
           startIcon={<Iconify icon="mingcute:add-line" />}
           onClick={() => handleAddUser('CLIENT')}
-          sx={{ ml: 1 }}
+          sx={{ 
+            ml: 1,
+            backgroundColor: '#7b38ff',
+            color: '#FFFFFF',
+            '&:hover': {
+              backgroundColor: '#6a2ed8',
+            },
+          }}
         >
           New Client
         </Button>
         <Button
           variant="contained"
-          color="inherit"
           startIcon={<Iconify icon="mingcute:add-line" />}
           onClick={() => handleAddUser('EMPLOYEE')}
-          sx={{ ml: 1 }}
+          sx={{ 
+            ml: 1,
+            backgroundColor: '#7b38ff',
+            color: '#FFFFFF',
+            '&:hover': {
+              backgroundColor: '#6a2ed8',
+            },
+          }}
         >
           New Employee
         </Button>

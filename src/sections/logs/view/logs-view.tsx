@@ -1,25 +1,30 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
+
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Table from '@mui/material/Table';
+import Button from '@mui/material/Button';
+import Tooltip from '@mui/material/Tooltip';
 import TableBody from '@mui/material/TableBody';
+import Typography from '@mui/material/Typography';
 import TableContainer from '@mui/material/TableContainer';
 import TablePagination from '@mui/material/TablePagination';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
-import Typography from '@mui/material/Typography';
-import Tooltip from '@mui/material/Tooltip';
 
 import { useRouter } from 'src/routes/hooks';
-import { DashboardContent } from 'src/layouts/dashboard';
-import axios from 'src/utils/axios';
-import { Scrollbar } from 'src/components/scrollbar';
-import { Iconify } from 'src/components/iconify';
-import { TableNoData } from 'src/sections/logs/table-no-data';
-import { TableEmptyRows } from 'src/sections/logs/table-empty-rows';
-import { emptyRows, applyFilter, getComparator } from 'src/sections/logs/utils';
 import { useTable } from 'src/routes/hooks/use-table';
+
+import axios from 'src/utils/axios';
+
+import { DashboardContent } from 'src/layouts/dashboard';
+
+import { Iconify } from 'src/components/iconify';
+import { Scrollbar } from 'src/components/scrollbar';
+
+import { TableNoData } from 'src/sections/logs/table-no-data';
 import LogsTableHead from 'src/sections/logs/logs-table-head';
+import { TableEmptyRows } from 'src/sections/logs/table-empty-rows';
+import { LogsTableToolbar } from 'src/sections/logs/logs-table-toolbar';
+import { emptyRows, applyFilter, getEnhancedComparator } from 'src/sections/logs/utils';
 
 // Interfaces
 interface LogBase {
@@ -63,6 +68,19 @@ export function LogsView() {
   const [codeSafetyLogs, setCodeSafetyLogs] = useState<CodeSafetyLog[]>([]);
   const [loading, setLoading] = useState(true);
   const isFetching = useRef(false);
+
+  // Filter states for each table
+  const [phishingProbabilityFilter, setPhishingProbabilityFilter] = useState('');
+  const [phishingSortBy, setPhishingSortBy] = useState('timestamp-desc');
+
+  const [ransomwareProbabilityFilter, setRansomwareProbabilityFilter] = useState('');
+  const [ransomwareSortBy, setRansomwareSortBy] = useState('timestamp-desc');
+
+  const [doSProbabilityFilter, setDoSProbabilityFilter] = useState('');
+  const [doSSortBy, setDoSSortBy] = useState('timestamp-desc');
+
+  const [codeSafetyProbabilityFilter, setCodeSafetyProbabilityFilter] = useState('');
+  const [codeSafetySortBy, setCodeSafetySortBy] = useState('timestamp-desc');
 
   const fetchLogs = useCallback(async () => {
     if (isFetching.current) return;
@@ -128,17 +146,25 @@ export function LogsView() {
     fetchLogs();
   }, [fetchLogs]);
 
-  const getFilteredData = (data: any[], tableHook: any) =>
+  const getFilteredData = (
+    data: any[], 
+    tableHook: any, 
+    logType: 'phishing' | 'ransomware' | 'dos' | 'codeSafety',
+    probabilityFilter: string,
+    sortBy: string
+  ) =>
     applyFilter({
       inputData: data,
-      comparator: getComparator(tableHook.order, tableHook.orderBy),
+      comparator: getEnhancedComparator(sortBy),
       filterName: tableHook.filterName,
+      probabilityFilter,
+      logType,
     });
 
-  const phishingData = getFilteredData(phishingLogs, tablePhishing);
-  const ransomwareData = getFilteredData(ransomwareLogs, tableRansomware);
-  const dosData = getFilteredData(doSLogs, tableDoS);
-  const codeSafetyData = getFilteredData(codeSafetyLogs, tableCodeSafety);
+  const phishingData = getFilteredData(phishingLogs, tablePhishing, 'phishing', phishingProbabilityFilter, phishingSortBy);
+  const ransomwareData = getFilteredData(ransomwareLogs, tableRansomware, 'ransomware', ransomwareProbabilityFilter, ransomwareSortBy);
+  const dosData = getFilteredData(doSLogs, tableDoS, 'dos', doSProbabilityFilter, doSSortBy);
+  const codeSafetyData = getFilteredData(codeSafetyLogs, tableCodeSafety, 'codeSafety', codeSafetyProbabilityFilter, codeSafetySortBy);
 
   if (loading) {
     return (
@@ -149,20 +175,34 @@ export function LogsView() {
     );
   }
 
-  const renderTable = (title: string, data: any[], columns: any[], tableHook: any) => (
+  const renderTable = (
+    title: string, 
+    data: any[], 
+    columns: any[], 
+    tableHook: any, 
+    logType: 'phishing' | 'ransomware' | 'dos' | 'codeSafety',
+    probabilityFilter: string,
+    sortBy: string,
+    onProbabilityFilter: (value: string) => void,
+    onSortBy: (value: string) => void
+  ) => (
     <Card sx={{ mb: 4 }}>
       <Typography variant="h6" sx={{ p: 2 }}>{title}</Typography>
-      <TextField
-        fullWidth
-        type="date"
-        value={tableHook.filterName}
-        onChange={(event) => {
+      
+      <LogsTableToolbar
+        numSelected={0}
+        filterName={tableHook.filterName}
+        onFilterName={(event) => {
           tableHook.onFilterName(event.target.value);
           tableHook.onResetPage();
         }}
-        InputLabelProps={{ shrink: true }}
-        sx={{ p: 2, maxWidth: '300px' }}
+        probabilityFilter={probabilityFilter}
+        onProbabilityFilter={onProbabilityFilter}
+        sortBy={sortBy}
+        onSortBy={onSortBy}
+        logType={logType}
       />
+      
       <Scrollbar>
         <TableContainer>
           <Table sx={{ minWidth: 600 }}>
@@ -228,14 +268,14 @@ export function LogsView() {
   const phishingColumns = [
     { id: 'url', label: 'URL', align: 'center' },
     { id: 'isSafe', label: 'Safe', align: 'center' },
-    { id: 'timestamp', label: 'Timestamp', align: 'center' },
+    { id: 'timestamp', label: 'Time', align: 'center' },
     { id: 'probability', label: 'Probability (%)', align: 'center' },
   ];
 
   const ransomwareColumns = [
     { id: 'url', label: 'URL', align: 'center' },
     { id: 'isSafe', label: 'Safe', align: 'center' },
-    { id: 'timestamp', label: 'Timestamp', align: 'center' },
+    { id: 'timestamp', label: 'Time', align: 'center' },
     { id: 'probability', label: 'Probability (%)', align: 'center' },
     { id: 'walletAddress', label: 'Wallet Address', align: 'center' },
   ];
@@ -243,14 +283,14 @@ export function LogsView() {
   const dosColumns = [
     { id: 'url', label: 'URL', align: 'center' },
     { id: 'isSafe', label: 'Safe', align: 'center' },
-    { id: 'timestamp', label: 'Timestamp', align: 'center' },
+    { id: 'timestamp', label: 'Time', align: 'center' },
     { id: 'probability', label: 'Probability (%)', align: 'center' },
   ];
 
   const codeSafetyColumns = [
     { id: 'url', label: 'URL/Code', align: 'center' },
     { id: 'isSafe', label: 'Safe', align: 'center' },
-    { id: 'timestamp', label: 'Timestamp', align: 'center' },
+    { id: 'timestamp', label: 'Time', align: 'center' },
     { id: 'anomalyScore', label: 'Anomaly Score', align: 'center' },
   ];
 
@@ -258,15 +298,26 @@ export function LogsView() {
     <DashboardContent>
       <Box display="flex" alignItems="center" mb={5}>
         <Typography variant="h4" flexGrow={1}>Logs</Typography>
-        <Button variant="contained" color="inherit" startIcon={<Iconify icon="mdi:refresh" />} onClick={fetchLogs}>
+        <Button 
+          variant="contained" 
+          startIcon={<Iconify icon="mdi:refresh" />} 
+          onClick={fetchLogs}
+          sx={{
+            backgroundColor: '#7b38ff',
+            color: '#FFFFFF',
+            '&:hover': {
+              backgroundColor: '#6a2ed8',
+            },
+          }}
+        >
           Refresh
         </Button>
       </Box>
 
-      {renderTable('Phishing Logs', phishingData, phishingColumns, tablePhishing)}
-      {renderTable('Ransomware Logs', ransomwareData, ransomwareColumns, tableRansomware)}
-      {renderTable('DoS Logs', dosData, dosColumns, tableDoS)}
-      {renderTable('Code Safety Logs', codeSafetyData, codeSafetyColumns, tableCodeSafety)}
+      {renderTable('Phishing Logs', phishingData, phishingColumns, tablePhishing, 'phishing', phishingProbabilityFilter, phishingSortBy, setPhishingProbabilityFilter, setPhishingSortBy)}
+      {renderTable('Ransomware Logs', ransomwareData, ransomwareColumns, tableRansomware, 'ransomware', ransomwareProbabilityFilter, ransomwareSortBy, setRansomwareProbabilityFilter, setRansomwareSortBy)}
+      {renderTable('DoS Logs', dosData, dosColumns, tableDoS, 'dos', doSProbabilityFilter, doSSortBy, setDoSProbabilityFilter, setDoSSortBy)}
+      {renderTable('Code Safety Logs', codeSafetyData, codeSafetyColumns, tableCodeSafety, 'codeSafety', codeSafetyProbabilityFilter, codeSafetySortBy, setCodeSafetyProbabilityFilter, setCodeSafetySortBy)}
     </DashboardContent>
   );
 }

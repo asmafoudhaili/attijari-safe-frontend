@@ -9,12 +9,12 @@ import { useTheme } from '@mui/material/styles';
 
 import { _langs } from 'src/_mock'; // Removed _notifications since it's not needed
 import { Iconify } from 'src/components/iconify';
+
 import { Main } from './main';
 import { layoutClasses } from '../classes';
 import { NavMobile, NavDesktop } from './nav';
 import { navData } from '../config-nav-dashboard';
 import { Searchbar } from '../components/searchbar';
-import { _workspaces } from '../config-nav-workspace';
 import { MenuButton } from '../components/menu-button';
 import { LayoutSection } from '../core/layout-section';
 import { HeaderSection } from '../core/header-section';
@@ -87,16 +87,6 @@ export function DashboardLayout({ sx, children, header }: DashboardLayoutProps) 
                       label: 'Home',
                       href: '/',
                       icon: <Iconify width={22} icon="solar:home-angle-bold-duotone" />,
-                    },
-                    {
-                      label: 'Profile',
-                      href: '#',
-                      icon: <Iconify width={22} icon="solar:shield-keyhole-bold-duotone" />,
-                    },
-                    {
-                      label: 'Settings',
-                      href: '#',
-                      icon: <Iconify width={22} icon="solar:settings-bold-duotone" />,
                     },
                   ]}
                 />

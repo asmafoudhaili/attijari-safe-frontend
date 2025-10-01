@@ -8,16 +8,17 @@ import LinearProgress, { linearProgressClasses } from '@mui/material/LinearProgr
 import { varAlpha } from 'src/theme/styles';
 import { AuthLayout } from 'src/layouts/auth';
 import { DashboardLayout } from 'src/layouts/dashboard';
+
 import { LogsView } from 'src/sections/logs/view';
 import { ReclamationsView } from 'src/sections/reclamation/view';
 
 // ----------------------------------------------------------------------
 
 export const HomePage = lazy(() => import('src/pages/home'));
-export const BlogPage = lazy(() => import('src/pages/blog'));
+// Removed unused BlogPage
 export const UserPage = lazy(() => import('src/pages/user'));
 export const SignInPage = lazy(() => import('src/pages/sign-in'));
-export const ProductsPage = lazy(() => import('src/pages/products'));
+// Removed unused ProductsPage
 export const Page404 = lazy(() => import('src/pages/page-not-found'));
 
 // ----------------------------------------------------------------------
@@ -63,8 +64,7 @@ export function Router() {
         { path: 'user', element: <UserPage /> },
         { path: 'logs', element: <LogsView /> },
         { path: 'reclamations', element: <ReclamationsView /> },
-        { path: 'products', element: <ProductsPage /> },
-        { path: 'blog', element: <BlogPage /> },
+        // Removed unused product and blog routes
       ],
     },
     {
